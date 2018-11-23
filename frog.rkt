@@ -5,7 +5,8 @@
 (define (init)
   (current-scheme/host "https://rmculpepper.github.io")
   (current-title "One Racketeer")
-  (current-author "Ryan Culpepper"))
+  (current-author "Ryan Culpepper")
+  (current-index-full? #f))
 
 ;; Called once per post and non-post page, on the contents.
 (define/contract (enhance-body xs)
