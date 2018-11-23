@@ -3,9 +3,11 @@
     Tags: racket, macros
 
 In Racket 7, the `syntax` form supports two new template subforms:
-- `~@` ("splice") splices the result of its subtemplate (which must
+
+- `~@`[racket] ("splice") splices the result of its subtemplate (which must
   produce a syntax list) into the enclosing list template, and
-- `~?` ("try") chooses between alternative subtemplates depending on
+
+- `~?`[racket] ("try") chooses between alternative subtemplates depending on
   whether their pattern variables have "absent" values.
 
 These features originated in `syntax/parse/experimental/template`: the
@@ -17,6 +19,7 @@ collisions with other libraries. In Racket 7, the old
 standard forms under the old names (that is, it exports `syntax` under
 the name `template`, and so on).
 
+<!-- more -->
 
 ## Splicing
 
@@ -28,9 +31,11 @@ parenthesized structure. One example of an unparenthesized logical
 group is paired key and value arguments in a call to the `hash`
 function:
 
-    (define-syntax-rule (zeros-hash key ...)
-      (hash (~@ key 0) ...))
-    (zeros-hash 'a 'b 'c) => (hash 'a 0 'b 0 'c 0)
+```racket
+(define-syntax-rule (zeros-hash key ...)
+  (hash (~@ key 0) ...))
+(zeros-hash 'a 'b 'c) => (hash 'a 0 'b 0 'c 0)
+```
 
 Another example is keyword arguments (that is, keyword and expression)
 in a function call.
@@ -47,15 +52,17 @@ example.
 For example, here is a macro based very loosely on the result of
 `define-ffi-definer` from `ffi/unsafe`:
 
-    (define-syntax (definer stx)
-      (syntax-parse stx
-        [(_ name key (~optional (~seq #:make-fail make-fail)))
-         #'(define name (lookup key (~? (make-fail 'name) default-fail)))]))
+```racket
+(define-syntax (definer stx)
+  (syntax-parse stx
+    [(_ name key (~optional (~seq #:make-fail make-fail)))
+     #'(define name (lookup key (~? (make-fail 'name) default-fail)))]))
 
-    (definer x 'x)
-    => (define x (lookup 'x default-fail))
-    (definer y 'y #:make-fail make-not-available)
-    => (define y (lookup 'y (make-not-available 'y)))
+(definer x 'x)
+=> (define x (lookup 'x default-fail))
+(definer y 'y #:make-fail make-not-available)
+=> (define y (lookup 'y (make-not-available 'y)))
+```
 
 
 ## Potential problems and incompatibilities
@@ -73,12 +80,14 @@ it is now illegal for `x.y` to occur in a syntax template. The
 rationale is that `x.y` is probably a mistake, an attempt to reference
 a nested attribute of `x` that doesn't actually exist.
 
-    (define-syntax-class binding-pair
-      (pattern [name:id rhs:expr]))
-    (syntax-parse #'[a (+ 1 2)]
-      [b:binding-pair
-       (list #'b.var    ;; ERROR: b.var is not bound
-             #'b.rhs)]) ;; OK: b.rhs is a nested attr of b
+```racket
+(define-syntax-class binding-pair
+  (pattern [name:id rhs:expr]))
+(syntax-parse #'[a (+ 1 2)]
+  [b:binding-pair
+   (list #'b.var    ;; ERROR: b.var is not bound
+         #'b.rhs)]) ;; OK: b.rhs is a nested attr of b
+```
 
 The restriction does not apply to syntax pattern variables bound by
 `syntax-case`, etc.
@@ -95,17 +104,19 @@ exactly the same as `~@`.).
 
 Here's an example loosely based on the `define-ffi-definer`:
 
-    (define-syntax (define-definer stx)
-      (syntax-case stx ()
-        [(_ definer #:default-make-fail default-make-fail)
-         #'(begin
-             (define dmf-var default-make-fail)
-             (define-syntax (definer istx)
-               (syntax-case istx ()
-                 [(_ name value (~optional (~seq #:fail fail)))
-                  (template
-                   (define name
-                     (lookup value (?? fail (dmf-var 'name)))))])))]))
+```racket
+(define-syntax (define-definer stx)
+  (syntax-case stx ()
+    [(_ definer #:default-make-fail default-make-fail)
+     #'(begin
+         (define dmf-var default-make-fail)
+         (define-syntax (definer istx)
+           (syntax-case istx ()
+             [(_ name value (~optional (~seq #:fail fail)))
+              (template
+               (define name
+                 (lookup value (?? fail (dmf-var 'name)))))])))]))
+```
 
 Previously, the `??` would get ignored (that is, treated as a syntax
 constant) by `syntax`; it would get noticed and interpreted by the
@@ -117,45 +128,50 @@ without the `#:fail` keyword.
 
 One fix is to escape the `??` using ellipsis-escaping:
 
-    .... (lookup value ((... ??) fail (dmf-var 'name))) ....
+```racket
+.... (lookup value ((... ??) fail (dmf-var 'name))) ....
+```
 
 Another fix is to use `quote-syntax` and an auxiliary `with-syntax` binding:
-               
-    (define-syntax (define-definer stx)
-      (syntax-case stx ()
-        [(_ definer #:default-make-fail default-make-fail)
-         (with-syntax ([inner-?? (quote-syntax ??)])
-         #'(begin
-             (define dmf-var default-make-fail)
-             (define-syntax (definer istx)
-               (syntax-case istx ()
-                 [(_ name value (~optional (~seq #:fail fail)))
-                  (template
-                   (define name
-                     (lookup value (inner-?? fail (dmf-var 'name)))))]))))]))
+
+```racket
+(define-syntax (define-definer stx)
+  (syntax-case stx ()
+    [(_ definer #:default-make-fail default-make-fail)
+     (with-syntax ([inner-?? (quote-syntax ??)])
+     #'(begin
+         (define dmf-var default-make-fail)
+         (define-syntax (definer istx)
+           (syntax-case istx ()
+             [(_ name value (~optional (~seq #:fail fail)))
+              (template
+               (define name
+                 (lookup value (inner-?? fail (dmf-var 'name)))))]))))]))
+```
 
 A better fix is to avoid having the outer macro generate the inner
 macro's entire implementation and use a compile-time helper function
 instead:
 
-    (begin-for-syntax
-      ;; make-definer-transformer : Identifier -> Syntax -> Syntax
-      (define ((make-definer-transformer dmf-var) istx)
-        (syntax-case istx ()
-          [(_ name value (~optional (~seq #:fail fail)))
-           (with-syntax ([dmf-var dmf-var])
-             (template
-               (define name
-                 (lookup value (?? fail (dmf-var 'name))))))])))
+```racket
+(begin-for-syntax
+  ;; make-definer-transformer : Identifier -> Syntax -> Syntax
+  (define ((make-definer-transformer dmf-var) istx)
+    (syntax-case istx ()
+      [(_ name value (~optional (~seq #:fail fail)))
+       (with-syntax ([dmf-var dmf-var])
+         (template
+           (define name
+             (lookup value (?? fail (dmf-var 'name))))))])))
 
-    (define-syntax (define-definer stx)
-      (syntax-case stx ()
-        [(_ definer #:default-make-fail default-make-fail)
-         #'(begin
-             (define dmf-var default-make-fail)
-             (define-syntax definer
-               (make-definer-transformer (quote-syntax dmf-var)))))]))
-
+(define-syntax (define-definer stx)
+  (syntax-case stx ()
+    [(_ definer #:default-make-fail default-make-fail)
+     #'(begin
+         (define dmf-var default-make-fail)
+         (define-syntax definer
+           (make-definer-transformer (quote-syntax dmf-var)))))]))
+```
 
 ### Strict argument checking in syntax/loc
 
@@ -165,8 +181,10 @@ the syntax produced by the template---but only if the outermost syntax
 wrapping layer comes from the template and not a pattern variable. For
 example, in the expression
 
-    (with-syntax ([x #'(displayln "hello!")])
-      (syntax/loc src-stx x))
+```racket
+(with-syntax ([x #'(displayln "hello!")])
+  (syntax/loc src-stx x))
+```
 
 the location of `src-stx` is *never* transferred to the resulting
 syntax object. If the old implementation of `syntax/loc` determined
@@ -174,8 +192,10 @@ that the first argument was irrelevant, it discarded it without
 checking that it was a syntax object. So, for example, the following
 misuse ran without error:
 
-    (with-syntax ([x #'(displayln "hello!")])
-      (syntax/loc 123 x))
+```racket
+(with-syntax ([x #'(displayln "hello!")])
+  (syntax/loc 123 x))
+```
 
 In Racket 7, `syntax/loc` is rewritten to handle the new
 subforms---consider, for example, the template `(~? x (+ 1 2))`; the
