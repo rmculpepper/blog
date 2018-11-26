@@ -1,5 +1,5 @@
 #lang scribble/manual
-Title: New syntax template features (in Scribble!)
+Title: New syntax template features
 Date: 2018-11-22T00:00:00
 Tags: racket, macros
 @(require (for-label racket/base syntax/parse syntax/parse/experimental/template))
