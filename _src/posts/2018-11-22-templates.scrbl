@@ -2,7 +2,8 @@
 ;; Tags: racket, macros
 #lang scribble/manual
 @(require (for-label racket/base syntax/parse syntax/parse/experimental/template))
-@title{New syntax template features}
+
+@title{new syntax template features}
 
 In Racket 7, the @racket[syntax] form supports two new template subforms:
 
