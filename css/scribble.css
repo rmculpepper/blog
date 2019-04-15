@@ -1,31 +1,18 @@
-
-/* This file is used by default by all Scribble documents.
-   See also "manual.css", which is added by default by the
-   `scribble/manual` language. */
-
-/* CSS seems backward: List all the classes for which we want a
-   particular font, so that the font can be changed in one place.  (It
-   would be nicer to reference a font definition from all the places
-   that we want it.)
-
-   As you read the rest of the file, remember to double-check here to
-   see if any font is set. */
-
 /* Monospace: */
 .maincolumn, .refpara, .refelem, .tocset, .stt, .hspace, .refparaleft, .refelemleft {
   font-family: monospace;
 }
 
 /* Serif: */
+/*
 .main, .refcontent, .tocview, .tocsub, .sroman, i {
   font-family: serif;
 }
+*/
 
 /* Sans-serif: */
-.version, .versionNoNav, .ssansserif {
-  font-family: sans-serif;
-}
 .ssansserif {
+  font-family: sans-serif;
   font-size: 80%;
   font-weight: bold;
 }
@@ -80,90 +67,6 @@ table td {
 
 .main {
   text-align: left;
-}
-
-/* ---------------------------------------- */
-/* Navigation */
-
-.navsettop, .navsetbottom {
-  background-color: #f0f0e0;
-  padding: 0.25em 0 0.25em 0;
-}
-
-.navsettop {
-  margin-bottom: 1.5em;
-  border-bottom: 2px solid #e0e0c0;
-}
-
-.navsetbottom {
-  margin-top: 2em;
-  border-top: 2px solid #e0e0c0;
-}
-
-.navleft {
-  margin-left: 1ex;
-  position: relative;
-  float: left;
-  white-space: nowrap;
-}
-.navright {
-  margin-right: 1ex;
-  position: relative;
-  float: right;
-  white-space: nowrap;
-}
-.nonavigation {
-  color: #e0e0e0;
-}
-
-.searchform {
-  display: inline;
-  margin: 0;
-  padding: 0;
-}
-
-.searchbox {
-  width: 16em;
-  margin: 0px;
-  padding: 0px;
-  background-color: #eee;
-  border: 1px solid #ddd;
-  text-align: center;
-  vertical-align: middle;
-}
-
-#contextindicator {
-  position: fixed;
-  background-color: #c6f;
-  color: #000;
-  font-family: monospace;
-  font-weight: bold;
-  padding: 2px 10px;
-  display: none;
-  right: 0;
-  bottom: 0;
-}
-
-/* ---------------------------------------- */
-/* Version */
-
-.versionbox {
-  position: relative;
-  float: right;
-  left: 2em;
-  height: 0em;
-  width: 13em;
-  margin: 0em -13em 0em 0em;
-}
-.version {
-  font-size: small;
-}
-.versionNoNav {
-  font-size: xx-small; /* avoid overlap with author */
-}
-
-.version:before, .versionNoNav:before {
-  content: "Version ";
 }
 
 /* ---------------------------------------- */
@@ -481,4 +384,249 @@ ol ol ol ol { list-style-type: upper-alpha; }
     margin-right: 13em;
     margin-left: 0;
   }
+}
+
+/********************************************************************************
+ * manual styles
+ ********************************************************************************/
+
+/* See the beginning of "manual.css". */
+
+/* Monospace: */
+
+.RktIn, .RktRdr, .RktPn, .RktMeta,
+.RktMod, .RktKw, .RktVar, .RktSym,
+.RktRes, .RktOut, .RktCmt, .RktVal,
+.RktBlk, .RktErr {
+  font-family: monospace;
+  white-space: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.RBackgroundLabelInner {
+  font-family: inherit;
+}
+
+/* ---------------------------------------- */
+/* Racket text styles */
+
+.RktIn {
+  color: #cc6633;
+  background-color: #eee;
+}
+
+.RktInBG {
+  background-color: #eee;
+}
+
+.refcolumn .RktInBG {
+  background-color: white;
+}
+
+.RktRdr {
+}
+
+.RktPn {
+  color: #843c24;
+}
+
+.RktMeta {
+  color: black;
+}
+
+.RktMod {
+  color: inherit;
+}
+
+.RktOpt {
+  color: black;
+}
+
+.RktKw {
+  color: black;
+}
+
+.RktErr {
+  color: red;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.RktVar {
+    position: relative;
+    left: -1px; font-style: italic;
+    color: #444;
+}
+
+.SVInsetFlow .RktVar {
+    font-weight: 400;
+    color: #444;
+}
+
+.RktSym {
+   color: inherit;
+}
+
+.RktValLink, .RktStxLink, .RktModLink {
+  text-decoration: none;
+    color: #07A;
+    font-size: 1rem;
+}
+
+/* for syntax links within headings */
+h2 a.RktStxLink, h3 a.RktStxLink, h4 a.RktStxLink, h5 a.RktStxLink,
+h2 a.RktValLink, h3 a.RktValLink, h4 a.RktValLink, h5 a.RktValLink,
+h2 .RktSym, h3 .RktSym, h4 .RktSym, h5 .RktSym,
+h2 .RktMod, h3 .RktMod, h4 .RktMod, h5 .RktMod,
+h2 .RktVal, h3 .RktVal, h4 .RktVal, h5 .RktVal,
+h2 .RktPn, h3 .RktPn, h4 .RktPn, h5 .RktPn {
+    color: #333;
+    font-size: 1.50rem;
+    font-weight: 400;
+}
+
+.toptoclink .RktStxLink, .toclink .RktStxLink,
+.toptoclink .RktValLink, .toclink .RktValLink,
+.toptoclink .RktModLink, .toclink .RktModLink {
+    color: inherit;
+}
+
+.tocset .RktValLink, .tocset .RktStxLink, .tocset .RktModLink, .tocset .RktSym {
+    color: black;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.tocset td a.tocviewselflink .RktValLink,
+.tocset td a.tocviewselflink .RktStxLink,
+.tocset td a.tocviewselflink .RktMod,
+.tocset td a.tocviewselflink .RktSym {
+    font-weight: lighter;
+    color: white;
+}
+
+.RktRes {
+  color: #0000af;
+}
+
+.RktOut {
+  color: #960096;
+}
+
+.RktCmt {
+  color: #c2741f;
+}
+
+.RktVal {
+  color: #228b22;
+}
+
+/* ---------------------------------------- */
+/* Some inline styles */
+
+.RktBlk {
+  white-space: pre;
+  text-align: left;
+}
+
+.highlighted {
+    font-size: 1rem;
+    background-color: #fee;
+}
+
+.specgrammar {
+    float: none;
+    padding-left: 1em;
+}
+
+.RBibliography td {
+  vertical-align: text-top;
+  padding-top: 1em;
+}
+
+.leftindent {
+ margin-left: 2rem;
+ margin-right: 0em;
+}
+
+.insetpara {
+ margin-left: 1em;
+ margin-right: 1em;
+}
+
+.SCodeFlow .Rfilebox {
+    margin-left: -1em;
+}
+
+.Rfiletitle {
+  text-align: right;
+  background-color: #eee;
+}
+
+.SCodeFlow .Rfiletitle {
+  border-top: 1px dotted gray;
+  border-right: 1px dotted gray;
+}
+
+.Rfilename {
+  border-top: 0;
+  border-right: 0;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  background-color: inherit;
+}
+
+.Rfilecontent {
+  margin: 0.5em;
+}
+
+.RpackageSpec {
+  padding-right: 0;
+}
+
+/* ---------------------------------------- */
+/* For background labels */
+
+.RBackgroundLabel {
+   float: right;
+   width: 0px;
+   height: 0px;
+}
+
+.RBackgroundLabelInner {
+   position: relative;
+   width: 25em;
+   left: -25.5em;
+   top: 0.20rem;
+   text-align: right;
+   z-index: 0;
+   font-weight: 300;
+   font-family: monospace;
+   font-size: 0.9rem;
+   color: gray;
+}
+
+.RpackageSpec .Smaller {
+   font-weight: 300;
+   font-family: monospace;
+   font-size: 0.9rem;
+}
+
+.RForeground {
+   position: relative;
+   left: 0px;
+   top: 0px;
+   z-index: 1;
+}
+
+/* ---------------------------------------- */
+/* For section source modules & tags */
+
+.RPartExplain {
+    background: #eee;
+    font-size: 0.9rem;
+    margin-top: 0.2rem;
+    padding: 0.2rem;
+    text-align: left;
 }
