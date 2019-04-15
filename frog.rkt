@@ -4,7 +4,7 @@
 ;; Called early when Frog launches. Use this to set parameters defined
 ;; in frog/params.
 (define (init)
-  (current-scheme/host "https://rmculpepper.github.io")
+  (current-scheme/host "https://rmculpepper.github.io/blog")
   (current-title "One Racketeer")
   (current-author "Ryan Culpepper")
   (current-index-full? #f))
