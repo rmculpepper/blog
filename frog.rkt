@@ -5,7 +5,7 @@
 ;; in frog/params.
 (define (init)
   (current-scheme/host "https://rmculpepper.github.io/blog")
-  (current-title "One Racketeer")
+  (current-title "(blog-of ryanc@racket-lang.org)")
   (current-author "Ryan Culpepper")
   (current-index-full? #f))
 
