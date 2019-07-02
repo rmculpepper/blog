@@ -1,5 +1,5 @@
 ;; Date: 2018-12-02T00:21:43
-;; Tags: notDRAFT
+;; Tags: DRAFT
 #lang scribble/manual
 @(require "util.rkt"
           (for-label racket/base))
@@ -19,7 +19,7 @@ yes---kind of.
 
 <!-- more -->
 
-@blog-section{Normal forms}
+@blogsection{Normal forms}
 
 To be precise, we are working with the following language:
 
@@ -63,7 +63,7 @@ normalization is not evaluation
 ]
 
 
-@blog-section{Normalization}
+@blogsection{Normalization}
 
 It's straightforward to write a normalizer that takes a term and produces a normal form (if the term has one). Start with an evaluator for call-by-name, then recur into lambda
 

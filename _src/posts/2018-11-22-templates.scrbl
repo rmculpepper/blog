@@ -13,7 +13,7 @@ In Racket 7, the @racket[syntax] form supports two new template subforms:
   produce a syntax list) into the enclosing list template, and}
 
 @item{@racket[~?] (``try'') chooses between alternative subtemplates depending
-  on whether their pattern variables have "absent" values.}
+  on whether their pattern variables have ``absent'' values.}
 
 ]
 
