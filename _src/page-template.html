@@ -101,14 +101,8 @@
         <div id="content" class="col-md-12">
           @;{ To put something only on the home page, check for
               @uri-path being "/index.html" }
-          @(when (string-ci=? uri-path
-                              (string-append uri-prefix
-                                             "/index.html"))
-            @list{
-              <h1>Welcome</h1>
-              <p>Here is some text that only goes on the home page,
-                because <code>@"@"uri-path</code> is
-                <code>/index.html</code>.</p> })
+          @(when (string-ci=? uri-path (string-append uri-prefix "/index.html"))
+             @list{ @;{ <h1>Posts</h1> } })
           @;{ Index pages for posts have @tag that's not #f }
           @(when tag
             @list{<h1>Posts tagged <em>@|tag|</em></h1>})
