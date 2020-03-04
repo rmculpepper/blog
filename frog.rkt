@@ -1,5 +1,9 @@
-#lang frog/config
-(require racket/match)
+#lang racket/base
+(require racket/match
+         frog/params
+         frog/enhance-body
+         threading)
+(provide (all-defined-out))
 
 ;; Called early when Frog launches. Use this to set parameters defined
 ;; in frog/params.
@@ -10,8 +14,7 @@
   (current-index-full? #f))
 
 ;; Called once per post and non-post page, on the contents.
-(define/contract (enhance-body xs)
-  (-> (listof xexpr/c) (listof xexpr/c))
+(define (enhance-body xs)
   ;; Here we pass the xexprs through a series of functions.
   (~> xs
       (syntax-highlight #:python-executable "python"
