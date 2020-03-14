@@ -1,5 +1,5 @@
 ;; Date: 2018-12-02T00:21:43
-;; Tags: DRAFT
+;; Display: draft
 #lang scribble/manual
 @(require "util.rkt"
           (for-label racket/base))
