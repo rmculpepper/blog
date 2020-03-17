@@ -25,7 +25,12 @@ article img {
 
 /* ---- */
 
-h1, h2, h3, h4, h5, h6 {
+.content h1,
+.content h2,
+.content h3,
+.content h4,
+.content h5,
+.content h6 {
     /* margin-top: 0.5rem !important; */
     margin-top: 1rem !important;
 }
@@ -37,4 +42,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .post-navigation, .index-pagination {
     text-align: center;
+}
+
+.site-title {
+}
+.site-tagline {
+    display: none;
+}
+.site-alt-tagline {
+    margin-top: 0.25em;
+    font-weight: 400;
 }
