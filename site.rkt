@@ -11,8 +11,7 @@
 
 (define-runtime-path here ".")
 (base-dir here)
-;;(base-url (string->url "https://rmculpepper.github.io/blog/"))
-(base-url (string->url "https://rmculpepper.github.io/"))
+(base-url (string->url "https://rmculpepper.github.io/blog"))
 
 (site-author "Ryan Culpepper")
 ;;(site-title "(blog-of ryanc@racket-lang.org)")
@@ -24,6 +23,10 @@
 (extra-html
  (lambda (location page)
    (case location
+     [(after-tagline)
+      @list{<h2 class="site-alt-tagline">
+              (blog-of ryanc@"@"racket-lang.org)
+            </h2>}]
      [(end-content)
       (define copyright-year
         (or (and (send page is-page-type? 'post) (send page get-year))
