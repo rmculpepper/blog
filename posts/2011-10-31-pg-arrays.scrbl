@@ -1,4 +1,5 @@
 ;; Date: 2011-10-31T00:00:00
+;; Tags: racket, db
 #lang scribble/manual
 @(require scribble/eval
           scribble/racket

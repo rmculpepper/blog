@@ -1,4 +1,5 @@
 ;; Date: 2011-09-07T00:00:00
+;; Tags: racket, macros
 #lang scribble/manual
 @(require scribble/eval
           scribble/racket
