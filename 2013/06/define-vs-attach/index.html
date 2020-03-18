@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>define vs attach</title>
+
+    <meta name="keywords" content="racket">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/2013/06/define-vs-attach">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/all.atom.xml">
+    <link rel="prev" href="/blog/2018/11/new-syntax-template-features">
+    <link rel="next" href="/blog/2012/03/avoid-flushing-your-wire-protocol-s-performance-down-the-pipes">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+
+
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">define vs attach</h1>
+    <div class="post-meta">
+      <div class="authors">By: Ryan Culpepper</div>
+      <span class="post-date"><time datetime="2013-06-05">2013-06-05</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a></span>
+    </div>
+  </header>
+  <p>Racket&rsquo;s macro system gives macros two ways of associating
+<span style="font-style: italic">static</span> (or <span style="font-style: italic">compile-time</span>) information with a particular
+name. One way is to <span style="font-style: italic">define</span> the name as the static information;
+the other is to <span style="font-style: italic">attach</span> the information to the already-defined
+name.</p>
+<p>Much of the power of Racket macros comes from their ability to create
+and manipulate novel kinds of static information [<a data-pltdoc="x" href="#%28cite._.M.T.W.T%29">MTWT</a>]. For
+example, a struct definition associates the struct name with a static
+record containing the names (identifiers) of the struct&rsquo;s
+functions. One client macros is <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span>, which uses this
+information to transform a struct pattern into code that uses the
+struct&rsquo;s predicate and accessors to recognize and destructure
+instances.</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span><span class="hspace">&nbsp;</span><span class="RktKw">point</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">x</span><span class="hspace">&nbsp;</span><span class="RktSym">y</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span><span class="hspace">&nbsp;</span><span class="RktSym">v</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">[</span><span class="RktPn">(</span><span class="RktKw">point</span><span class="hspace">&nbsp;</span><span class="RktSym">x</span><span class="hspace">&nbsp;</span><span class="RktSym">y</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">....</span><span class="RktPn">]</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktSym">....</span><span class="RktPn">)</span></td></tr><tr><td>&#8658;</td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28quote._~23~25kernel%29._if%29%29">if</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">point?</span><span class="hspace">&nbsp;</span><span class="RktSym">v</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">[</span><span class="RktSym">x</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">point-x</span><span class="hspace">&nbsp;</span><span class="RktSym">v</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="hspace">&nbsp;</span><span class="RktPn">[</span><span class="RktSym">y</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">point-y</span><span class="hspace">&nbsp;</span><span class="RktSym">v</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">....</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span><span class="hspace">&nbsp;</span><span class="RktSym">v</span><span class="hspace">&nbsp;</span><span class="RktSym">....</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Another client is <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct-out%29%29">struct-out</a></span>:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span><span class="hspace">&nbsp;</span><span class="RktKw">point</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">x</span><span class="hspace">&nbsp;</span><span class="RktSym">y</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._provide%29%29">provide</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct-out%29%29">struct-out</a></span><span class="hspace">&nbsp;</span><span class="RktKw">point</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td>&#8658;</td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._provide%29%29">provide</a></span><span class="hspace">&nbsp;</span><span class="RktKw">point</span><span class="hspace">&nbsp;</span><span class="RktSym">point?</span><span class="hspace">&nbsp;</span><span class="RktSym">point-x</span><span class="hspace">&nbsp;</span><span class="RktSym">point-y</span><span class="hspace">&nbsp;</span><span class="RktSym">struct:point</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Structs provide an interface to their static information
+(<a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/structinfo.html"><span class="RktSym">racket/struct-info</span></a>), so programmers can create
+additional client macros.</p>
+<h2><a name="(part._.The_define_approach)"></a>The <span style="font-style: italic">define</span> approach</h2>
+<p>Racket enables this kind of association through an extension to
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-syntax%29%29">define-syntax</a></span> that allows the right-hand side to be any
+(compile-time) value, not just a macro transformer. In fact, in Racket
+any name bound via <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-syntax%29%29">define-syntax</a></span> to a function is treated as
+a macro. Likewise, a struct type is just a name bound via
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-syntax%29%29">define-syntax</a></span> to a <a class="Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/structinfo.html">static
+struct record</a>. The code that <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span> produces to define
+<span class="RktKw">point</span> looks something like this:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span><span class="hspace">&nbsp;</span><span class="RktKw">point</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">x</span><span class="hspace">&nbsp;</span><span class="RktSym">y</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td>&#8658;</td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin%29%29">begin</a></span></td></tr><tr><td><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28quote._~23~25kernel%29._define-values%29%29">define-values</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">make-point</span><span class="hspace">&nbsp;</span><span class="RktSym">point?</span><span class="hspace">&nbsp;</span><span class="RktSym">point-x</span><span class="hspace">&nbsp;</span><span class="RktSym">point-y</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">....</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-syntax%29%29">define-syntax</a></span><span class="hspace">&nbsp;</span><span class="RktKw">point</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/structinfo.html#%28def._%28%28lib._racket%2Fstruct-info..rkt%29._make-struct-info%29%29">make-struct-info</a></span><span class="hspace">&nbsp;</span><span class="RktSym">....</span><span class="hspace">&nbsp;</span><span class="RktRdr">#'</span><span class="RktSym">make-point</span><span class="hspace">&nbsp;</span><span class="RktRdr">#'</span><span class="RktSym">point?</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/pairs.html#%28def._%28%28quote._~23~25kernel%29._list%29%29">list</a></span><span class="hspace">&nbsp;</span><span class="RktRdr">#'</span><span class="RktSym">point-x</span><span class="hspace">&nbsp;</span><span class="RktRdr">#'</span><span class="RktSym">point-y</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>The code is similar for <a class="techoutside Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/mzlib_unit.html#%28tech._signature%29"><span class="techinside">signatures</span></a> and
+<a class="techoutside Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28tech._match._expander%29"><span class="techinside">match expanders</span></a> and
+<a class="Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/for.html">sequence syntaxes</a> and so on. Client macros
+fetch static information using the <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._syntax-local-value%29%29">syntax-local-value</a></span>
+function.</p>
+<p>The <span style="font-style: italic">define</span> approach seems sensible as long as a name has a
+single kind of information associated with it, but what if we want a
+name to carry multiple kinds of static information?  For example,
+suppose we have an ORM library with a macro that defines struct types
+that also carry information about their persistent storage. Or what if
+we want a name to carry static information but also act as a value?
+For example, a struct name carries the static information discussed
+above, but it also acts as a constructor&#8212;<wbr></wbr>a function.</p>
+<p>I will refer to an independent kind of information attachable to a
+name as a <a name="(tech._sense)"></a><span style="font-style: italic">sense</span> of information or of meaning.  Note that a
+name having multiple senses of information is different from what some
+languages call &ldquo;multiple namespaces.&rdquo; Racket has a single
+&ldquo;namespace&rdquo; in that sense: all of the information attached to a name
+has the same scope. Consider the following code:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span><span class="hspace">&nbsp;</span><span class="RktKw">point</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">x</span><span class="hspace">&nbsp;</span><span class="RktSym">y</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktKw">point</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">....</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>The <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span> expression&rsquo;s binding of <span class="RktKw">point</span> shadows not
+only the constructor meaning of <span class="RktKw">point</span> but also its
+struct-name meaning (used by <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span> and <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct-out%29%29">struct-out</a></span>).</p>
+<p>The way a name can carry multiple senses of information is if its
+(compile-time) value is appropriate for representing each kind of
+information. Whether that is possible depends on the representations
+chosen for each sense. If one sense of information is represented as a
+vector and another as a list, then there is no way for one name to
+encompass both. But if both kinds of information are represented via
+<a class="Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/struct-generics.html">generic interfaces</a> (or, at a
+lower level, <a class="Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/structprops.html">struct type
+properties</a>), then we can simply create a new struct type that
+implements all of the required interfaces.</p>
+<p>In particular, a name&rsquo;s behavior as an expression is controlled by the
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/procedures.html#%28def._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._prop~3aprocedure%29%29">prop:procedure</a></span> interface. So a struct name, for example, has
+a compile-time value (created by <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/structinfo.html#%28def._%28%28lib._racket%2Fstruct-info..rkt%29._make-struct-info%29%29">make-struct-info</a></span>) that
+implements both a specialized struct-type information interface and
+the <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/procedures.html#%28def._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._prop~3aprocedure%29%29">prop:procedure</a></span> interface.  The first interface serves
+clients such as <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span> and <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct-out%29%29">struct-out</a></span>, and the second
+interface allows struct names to be used as constructors&#8212;<wbr></wbr>by
+expanding into references to the <span style="font-style: italic">real</span> constructor function.</p>
+<h2><a name="(part._.The_attach_approach)"></a>The <span style="font-style: italic">attach</span> approach</h2>
+<p>The problem with the definition approach, however, is that it relies
+on all senses of a name to be known and available when the name is
+defined. No more can be added later. Consider again the example of
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span> patterns. There are a number of built-in pattern
+forms&#8212;<wbr></wbr>like <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._and%29%29">and</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._or%29%29">or</a></span>, and <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/pairs.html#%28def._%28%28quote._~23~25kernel%29._list%29%29">list</a></span>&#8212;<wbr></wbr>that share
+their names with bindings from <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/index.html"><span class="RktSym">racket/base</span></a>. The
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span> form wants to <span style="font-style: italic">attach</span> new sense of meaning&#8212;<wbr></wbr>as
+pattern forms&#8212;<wbr></wbr>to those existing bindings.</p>
+<p>If the set of names to give new meaning to is small, fixed, and known
+when the client macro is defined&#8212;<wbr></wbr>like in the case of
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span>&#8212;<wbr></wbr>then it can be done by simple hard-coded identifier
+comparisons in the
+<a href="/blog/2011/09/macros-and-literals">literals list</a> of a
+macro. Otherwise, the new sense of meaning can be represented by an
+<span style="font-style: italic">identifier-keyed dictionary</span>. (Like macro literals, identifier
+dictionaries should use <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxcmp.html#%28def._%28%28quote._~23~25kernel%29._free-identifier~3d~3f%29%29">free-identifier=?</a></span> for key
+comparison. The <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/syntax-helpers.html#%28mod-path._syntax%2Fid-table%29"><span class="RktSym">syntax/id-table</span></a> library provides an
+efficient hash-based implementation, <a class="Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/syntax-helpers.html#%28part._idtable%29">free-identifier
+tables</a>.)</p>
+<p>In general, the code to <span style="font-style: italic">attach</span> information to the
+<span class="RktVar">sense</span> sense of an identifier <span class="RktVar">name</span> will look
+something like the following:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin-for-syntax%29%29">begin-for-syntax</a></span></td></tr><tr><td><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">sense-attach!</span><span class="hspace">&nbsp;</span><span class="RktRdr">#'</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktSym">sense-information</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>where <span class="RktSym">sense-attach!</span> is backed by a free-identifier table. The
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin-for-syntax%29%29">begin-for-syntax</a></span> form is necessary to update the information
+in the correct phase and to make the information &ldquo;persistent&rdquo; by
+performing it every time the enclosing module is visited, not just
+once when the enclosing module is compiled [<a data-pltdoc="x" href="#%28cite._.Y.W.I.W%29">YWIW</a>].</p>
+<p>Using an identifier table relaxes the constraints imposed by the
+definition-based mechanism: new meanings can be attached to a name
+after its definition, and a name can carry many senses of meaning
+without conflicts&#8212;<wbr></wbr>just define a new table.</p>
+<p>Typed Racket [<a data-pltdoc="x" href="#%28cite._.L.L%29">LL</a>], for example, uses the <span style="font-style: italic">attach</span> approach
+for its type environment&#8212;<wbr></wbr>the mapping of names to their types. In
+other words, typed variables have a sense of information which is
+their type. When Typed Racket compiles a typed module, it gathers the
+names defined in the module together with the types given to (or
+inferred for) them and inserts compile-time code into the module to
+update Typed Racket&rsquo;s global type environment table when the typed
+module is <a class="techoutside Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/syntax-model.html#%28tech._visit%29"><span class="techinside">visit</span></a>ed&#8212;<wbr></wbr>that is, during the compilation
+of any module that depends on it.</p>
+<p>For Typed Racket, one benefit of <span style="font-style: italic">attach</span> over <span style="font-style: italic">define</span> is
+that the information survives macro expansion. Typed Racket works by
+fully expanding a module body, then analyzing (type checking) and
+transforming the code (to protect exports from untyped contexts, for
+example). Fully expanded code contains no macros or other syntax
+bindings, though, so typed variables cannot be represented as
+expression macros, and if they were bound to some other kinds of
+static information, they wouldn&rsquo;t be usable as variables. Storing type
+information in a separate static table solves the problem.</p>
+<p>There are drawbacks to the <span style="font-style: italic">attach</span> approach, though. It buys
+flexibility in the form of (limited) mutation, and that has some
+standard costs. The <span style="font-style: italic">attach</span> approach separates the definition of
+a name from the point where some kind of static information is added
+to the name, and there are no inherent constraints on when that
+information can be added&#8212;<wbr></wbr>or how many times. If the ability to attach
+information of some sense is exposed to the programmer, for example,
+they might use it in two different modules to attach different values
+to the same name. If a third module then imports both of those two
+modules, then what information should that name be considered to
+carry?</p>
+<p>A bad answer would be to pick an arbitrary answer (perhaps the
+&ldquo;latest&rdquo; information attached for that sense). That corresponds to
+blindly updating the table, no matter if it already contained an entry
+for the name in question. A better answer would be to raise an error
+if multiple sites try to attach information to the same name. That
+would be a &ldquo;fail early&rdquo; approach to conflicts. Another answer might
+be to change the state associated with the name to some
+&ldquo;incompatible&rdquo; indicator and only signal an error if that sense of
+the name is actually used in the program&#8212;<wbr></wbr>that is, shift the error
+from update-time to lookup-time.</p>
+<p>In many cases, the best approach is to avoid the problem by strictly
+limiting the ways in which information can be attached to names. For
+example, a library might internally represent information via a
+compile-time table, so that it can attach meaning to a few existing
+names, but only export a form that follows a <span style="font-style: italic">define</span>-like
+discipline.</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktKw">define-sense</span><span class="hspace">&nbsp;</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktSym">....sense-info....</span><span class="RktPn">)</span></td></tr><tr><td>&#8658;</td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin%29%29">begin</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-syntax%29%29">define-syntax</a></span><span class="hspace">&nbsp;</span><span class="RktSym">name</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">stx</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">....meaning-as-expr....</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin-for-syntax%29%29">begin-for-syntax</a></span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">sense-attach!</span><span class="hspace">&nbsp;</span><span class="RktRdr">#'</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktSym">....sense-info....</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Or it might mark the general <span style="font-style: italic">attach</span> facility as for
+power users or extension builders only.</p>
+<p>Both <span style="font-style: italic">define</span> and <span style="font-style: italic">attach</span> approaches work with local
+bindings too, although the code produced for <span style="font-style: italic">attach</span> must be
+adapted: local bindings have no need for cross-module persistence, and
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin-for-syntax%29%29">begin-for-syntax</a></span> cannot be used except at module level
+anyway. The attaching form should produce the following code instead:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28quote._~23~25kernel%29._define-syntaxes%29%29">define-syntaxes</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin%29%29">begin</a></span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">sense-attach!</span><span class="hspace">&nbsp;</span><span class="RktRdr">#'</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktSym">....sense-info....</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/values.html#%28def._%28%28quote._~23~25kernel%29._values%29%29">values</a></span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>In fact, this is the essense of what <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/begin.html#%28form._%28%28quote._~23~25kernel%29._begin-for-syntax%29%29">begin-for-syntax</a></span> means
+for expressions anyway, so the same code can be used for both module
+contexts and local (definition) contexts.</p>
+<h2><a name="(part._doc-bibliography)"></a>Bibliography</h2>
+<p></p>
+<table cellpadding="0" cellspacing="0" class="RBibliography"><tbody><tr><td><a name="(cite._.L.L)"></a>[LL]</td><td><span class="hspace">&nbsp;</span></td><td><span class="bibentry">Sam Tobin-Hochstadt and Vincent St-Amour and Ryan Culpepper and Matthew Flatt and Matthias Felleisen, &ldquo;Languages as libraries,&rdquo; Programming Language Design and Implementation (PLDI), 2011. <a href="http://www.ccs.neu.edu/racket/pubs/pldi11-thacff.pdf"><span class="stt">http://www.ccs.neu.edu/racket/pubs/pldi11-thacff.pdf</span></a></span></td></tr><tr><td><a name="(cite._.M.T.W.T)"></a>[MTWT]</td><td><span class="hspace">&nbsp;</span></td><td><span class="bibentry">Matthew Flatt, Ryan Culpepper, David Darais, and Robert Bruce Findler, &ldquo;Macros that work together,&rdquo; <span style="font-style: italic">Journal of Functional Programming</span> <span style="font-weight: bold">22</span>, 2012. <a href="http://journals.cambridge.org/action/displayAbstract?fromPage=online&amp;aid=8573399"><span class="stt">http://journals.cambridge.org/action/displayAbstract?fromPage=online&amp;aid=8573399</span></a></span></td></tr><tr><td><a name="(cite._.Y.W.I.W)"></a>[YWIW]</td><td><span class="hspace">&nbsp;</span></td><td><span class="bibentry">Matthew Flatt, &ldquo;Composable and compilable macros: you want it when?,&rdquo; International Conference on Functional Programming (ICFP), 2002. <a href="http://www.cs.utah.edu/plt/publications/macromod.pdf"><span class="stt">http://www.cs.utah.edu/plt/publications/macromod.pdf</span></a></span></td></tr></tbody></table>
+  <footer>
+    <nav class="post-navigation" aria-label="Post Navigation">
+  <div class="pure-menu">
+  <ul class="pure-menu-list">
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2018/11/new-syntax-template-features"
+         aria-label="Previous">
+        <span aria-hidden="true">&larr; new syntax template features</span>
+      </a>
+    </li>
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2012/03/avoid-flushing-your-wire-protocol-s-performance-down-the-pipes"
+         aria-label="Next">
+        <span aria-hidden="true">avoid flushing your wire protocol's performance down the pipes &rarr;</span>
+      </a>
+    </li>
+  </ul>
+  </div>
+</nav>
+  </footer>
+</article>
+
+
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2013 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>Posts tagged 'db'</title>
+
+    <meta name="keywords" content="db">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/tags/db.html">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/db.atom.xml">
+
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+          <div>
+            <div style="float: right">
+              <a class="" href="/blog/feeds/db.atom.xml">atom</a>
+            </div>
+            <h1 class="content-subhead">
+              Posts tagged <em>db</em>
+            </h1>
+          </div>
+
+          <article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2012/03/avoid-flushing-your-wire-protocol-s-performance-down-the-pipes'>avoid flushing your wire protocol's performance down the pipes</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2012-03-16">2012-03-16</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/db.html">db</a></span>
+    </div>
+  </header>
+  <p>When implementing a wire protocol, one occasionally needs to know something
+about the wires. This blog post is the story of how the placement of a call to
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/port-buffers.html#%28def._%28%28quote._~23~25kernel%29._flush-output%29%29">flush-output</a></span> caused a <span style="font-style: italic">factor-of-20</span> variation in performance.</p>
+  <footer><a href='/blog/2012/03/avoid-flushing-your-wire-protocol-s-performance-down-the-pipes'>&hellip; more &hellip;</a></footer>
+</article>
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2012/02/unprepared-queries-vs-statement-caching'>unprepared queries vs statement caching</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2012-02-09">2012-02-09</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/db.html">db</a></span>
+    </div>
+  </header>
+  <p>Racket&rsquo;s <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> library supports parameterized queries
+where the SQL is given as a string (that is, <a name="(tech._unprepared)"></a><span style="font-style: italic">unprepared</span>):</p>
+<div class="SCodeFlow"><p><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._query-list%29%29">query-list</a></span><span class="hspace">&nbsp;</span><span class="RktSym">c</span><span class="hspace">&nbsp;</span><span class="RktVal">"SELECT field1 FROM table WHERE field2 = ?"</span><span class="hspace">&nbsp;</span><span class="RktVal">17</span><span class="RktPn">)</span></p></div>
+<p>This is handled by an implicit call to <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._prepare%29%29">prepare</a></span>, which turns
+the string into a prepared statement; the prepared statement is then
+executed with the arguments.</p>
+<p>The problem with this approach is that it involves two trips to the
+server: one to prepare and one to execute. One trip would be
+better. In this post I discuss two techniques for eliminating
+extraneous server trips. I&rsquo;ve recently added one of them to Racket;
+the other turns out to be problematic.</p>
+  <footer><a href='/blog/2012/02/unprepared-queries-vs-statement-caching'>&hellip; more &hellip;</a></footer>
+</article>
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2011/10/in-praise-of-PostgreSQL-arrays'>in praise of PostgreSQL arrays</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2011-10-31">2011-10-31</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/db.html">db</a></span>
+    </div>
+  </header>
+  <p>I just added support for
+<a href="http://www.postgresql.org/docs/current/static/arrays.html">PostgreSQL
+arrays</a> to the <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> library. While there are some uses
+of arrays that are iffy from a database design standpoint, there&rsquo;s one
+use that weighs overwhelmingly in their favor: avoiding dynamic
+generation of SQL <span class="stt">IN</span> comparisons.</p>
+  <footer><a href='/blog/2011/10/in-praise-of-PostgreSQL-arrays'>&hellip; more &hellip;</a></footer>
+</article>
+
+          <nav class="index-pagination" aria-label="Index Pagination">
+  <div class="pure-menu pure-menu-horizontal">
+    <ul class="pure-menu-list">
+      <li class="pure-menu-item pure-menu-disabled">
+        <a class="pure-menu-link pure-menu-disabled" href="#">&larr;</a>
+      </li>
+      <li class='pure-menu-item pure-menu-selected'>
+        <a class="pure-menu-link" href="/blog/tags/db.html">1</a>
+      </li>
+      <li class="pure-menu-item pure-menu-disabled">
+        <a class="pure-menu-link pure-menu-disabled" href="#">&rarr;</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2006&ndash;2020 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

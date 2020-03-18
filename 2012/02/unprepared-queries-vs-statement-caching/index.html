@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>unprepared queries vs statement caching</title>
+
+    <meta name="keywords" content="racket,db">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/2012/02/unprepared-queries-vs-statement-caching">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/all.atom.xml">
+    <link rel="prev" href="/blog/2012/03/avoid-flushing-your-wire-protocol-s-performance-down-the-pipes">
+    <link rel="next" href="/blog/2011/10/in-praise-of-PostgreSQL-arrays">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+
+
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">unprepared queries vs statement caching</h1>
+    <div class="post-meta">
+      <div class="authors">By: Ryan Culpepper</div>
+      <span class="post-date"><time datetime="2012-02-09">2012-02-09</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/db.html">db</a></span>
+    </div>
+  </header>
+  <p>Racket&rsquo;s <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> library supports parameterized queries
+where the SQL is given as a string (that is, <a name="(tech._unprepared)"></a><span style="font-style: italic">unprepared</span>):</p>
+<div class="SCodeFlow"><p><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._query-list%29%29">query-list</a></span><span class="hspace">&nbsp;</span><span class="RktSym">c</span><span class="hspace">&nbsp;</span><span class="RktVal">"SELECT field1 FROM table WHERE field2 = ?"</span><span class="hspace">&nbsp;</span><span class="RktVal">17</span><span class="RktPn">)</span></p></div>
+<p>This is handled by an implicit call to <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._prepare%29%29">prepare</a></span>, which turns
+the string into a prepared statement; the prepared statement is then
+executed with the arguments.</p>
+<p>The problem with this approach is that it involves two trips to the
+server: one to prepare and one to execute. One trip would be
+better. In this post I discuss two techniques for eliminating
+extraneous server trips. I&rsquo;ve recently added one of them to Racket;
+the other turns out to be problematic.</p>
+<p>The first approach, which I call &ldquo;unprepared query,&rdquo; is to avoid
+preparing the statement altogether. PostgreSQL has a way of sending
+both query string and arguments together in the same communication
+without needing to hear back from the server. It&rsquo;s done by sending
+<a href="http://www.postgresql.org/docs/current/static/protocol-flow.html#PROTOCOL-FLOW-EXT-QUERY"><span class="stt">Parse</span></a>, <a href="http://www.postgresql.org/docs/current/static/protocol-flow.html#PROTOCOL-FLOW-EXT-QUERY"><span class="stt">Bind</span></a>, and <a href="http://www.postgresql.org/docs/current/static/protocol-flow.html#PROTOCOL-FLOW-EXT-QUERY"><span class="stt">Execute</span></a> messages in a
+pipeline before sending <a href="http://www.postgresql.org/docs/current/static/protocol-flow.html#PROTOCOL-FLOW-EXT-QUERY"><span class="stt">Sync</span></a>, which triggers a server
+response. In MySQL it&rsquo;s only possible (if I remember correctly) if
+there are no arguments, in which case one can use <a href="http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#COM_QUERY"><span class="stt">COM_QUERY</span></a>
+instead of <a href="http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#COM_PREPARE"><span class="stt">COM_PREPARE</span></a> and <a href="http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#COM_EXECUTE"><span class="stt">COM_EXECUTE</span></a>.</p>
+<p>The main problem with unprepared queries for PostgreSQL is that Racket
+no longer sees the statement&rsquo;s argument and result types. So if the
+arguments are the wrong type, the server catches the error instead of
+Racket. That&rsquo;s bad for two reasons: the error you get is different
+from the error you get in the prepared case (and worse, IMHO), and if
+you&rsquo;re in a transaction, it invalidates the transaction (all errors
+invalidate a transaction in PostgreSQL). The <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a>
+library also needs the result types so it can choose between the text
+and binary result encodings; for most types it speaks binary, but a
+few (eg <span class="stt">TIMESTAMP</span>, <span class="stt">NUMERIC</span>) have complicated enough binary
+forms that it&rsquo;s easier to just parse the text form. So unprepared
+queries for PostgreSQL are out. For MySQL there&rsquo;s a similar issue:
+<a href="http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#COM_QUERY"><span class="stt">COM_QUERY</span></a> message produces text results whereas the
+<a href="http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#COM_EXECUTE"><span class="stt">COM_EXECUTE</span></a> message binary results. And again, it doesn&rsquo;t work
+for queries with parameters.</p>
+<p>For both systems it would be fine to use unprepared queries for
+statements that neither take arguments nor return result rows. The
+<a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> library does just that for MySQL connections, but
+for a different reason: only some types of statements can be
+prepared. So unless it&rsquo;s a <span class="stt">SELECT</span> or <span class="stt">SHOW</span> statement (which
+return rows) or it has parameters, a statement is executed
+unprepared. But in PostgreSQL, every statement is preparable, and the
+statements that are safe to execute unprepared are the ones that
+aren&rsquo;t likely to be executed too often, like <span class="stt">CREATE TABLE</span>.</p>
+<p>The alternative, given that we usually want the prepared statement
+information for better error behavior, is to cache implicit call to
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._prepare%29%29">prepare</a></span>. The first query still involves two trips, but
+subsequent queries only take one. Only DML statements are cached:
+<span class="stt">SELECT</span>, <span class="stt">INSERT</span>, etc.</p>
+<p>Just one hitch&#8212;<wbr></wbr>changes to the database schema may invalidate the
+information associated with prepared statements. A connection inspects
+each statement it executes to see if it is a potentially
+schema-changing statement such as <span class="stt">ALTER TABLE</span>; if so, it
+invalidates the statement cache. We also invalidate the cache on
+transactional statements; a <span class="stt">ROLLBACK TO SAVEPOINT</span> can undo a
+previous schema change in PostgreSQL.</p>
+<p>But a schema change could also originate from another connection, so
+by default we only enable the statement cache inside of a
+transaction. The transaction isolates us from surprise
+externally-originating schema changes (on PostgreSQL, anyway&#8212;<wbr></wbr>getting
+this right on MySQL is probably hopeless). The programmer should
+probably be able to tune how careful the statement cache is, but I
+haven&rsquo;t added that yet.</p>
+  <footer>
+    <nav class="post-navigation" aria-label="Post Navigation">
+  <div class="pure-menu">
+  <ul class="pure-menu-list">
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2012/03/avoid-flushing-your-wire-protocol-s-performance-down-the-pipes"
+         aria-label="Previous">
+        <span aria-hidden="true">&larr; avoid flushing your wire protocol's performance down the pipes</span>
+      </a>
+    </li>
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2011/10/in-praise-of-PostgreSQL-arrays"
+         aria-label="Next">
+        <span aria-hidden="true">in praise of PostgreSQL arrays &rarr;</span>
+      </a>
+    </li>
+  </ul>
+  </div>
+</nav>
+  </footer>
+</article>
+
+
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2012 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

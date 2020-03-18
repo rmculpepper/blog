@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>Posts tagged 'racket' (page 2)</title>
+
+    <meta name="keywords" content="racket">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/tags/racket-2.html">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/racket.atom.xml">
+    <link rel="prev" href="/blog/tags/racket.html">
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+          <div>
+            <div style="float: right">
+              <a class="" href="/blog/feeds/racket.atom.xml">atom</a>
+            </div>
+            <h1 class="content-subhead">
+              Posts tagged <em>racket</em>
+            </h1>
+          </div>
+
+          <article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2006/04/macros-parameters-binding-and-reference'>macros, parameters; binding, and reference</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2006-04-08">2006-04-08</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/macros.html">macros</a></span>
+    </div>
+  </header>
+  <p>Danny Yoo had an interesting question on the plt-scheme mailing list
+recently. At first it seemed like your standard non-hygienic, &ldquo;I want
+this to mean something in here&rdquo; macro question. I used to group
+macros into three levels of &ldquo;hygienicness&rdquo;: the hygienic ones, the
+ones that are morally hygienic in that the names they introduce are
+based on their input, and the totally non-hygienic ones that have a
+fixed name that they stick into the program. An example of the middle
+set is <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-struct%29%29">define-struct</a></span>, and an example of the third set is a
+loop construct that binds the name <span class="RktKw">yield</span> in its body.</p>
+<p>The third class used to offend me from a purist&rsquo;s (semi-purist?)
+perspective. But it&rsquo;s a very reasonable thing to want to do. Consider
+the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._class%29%29">class</a></span> macro and the names it uses to do interesting
+things: <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._super%29%29">super</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._public%29%29">public</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._field%29%29">field</a></span>,
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._init%29%29">init</a></span>, and so on. It depends on those particular names.</p>
+  <footer><a href='/blog/2006/04/macros-parameters-binding-and-reference'>&hellip; more &hellip;</a></footer>
+</article>
+
+          <nav class="index-pagination" aria-label="Index Pagination">
+  <div class="pure-menu pure-menu-horizontal">
+    <ul class="pure-menu-list">
+      <li class="page-item">
+        <a class="pure-menu-link" href="/blog/tags/racket.html">&larr;</a>
+      </li>
+      <li class='pure-menu-item '>
+        <a class="pure-menu-link" href="/blog/tags/racket.html">1</a>
+      </li><li class='pure-menu-item pure-menu-selected'>
+             <a class="pure-menu-link" href="/blog/tags/racket-2.html">2</a>
+           </li>
+      <li class="pure-menu-item pure-menu-disabled">
+        <a class="pure-menu-link pure-menu-disabled" href="#">&rarr;</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2006&ndash;2020 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

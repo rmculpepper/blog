@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>avoid flushing your wire protocol's performance down the pipes</title>
+
+    <meta name="keywords" content="racket,db">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/2012/03/avoid-flushing-your-wire-protocol-s-performance-down-the-pipes">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/all.atom.xml">
+    <link rel="prev" href="/blog/2013/06/define-vs-attach">
+    <link rel="next" href="/blog/2012/02/unprepared-queries-vs-statement-caching">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+
+
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">avoid flushing your wire protocol's performance down the pipes</h1>
+    <div class="post-meta">
+      <div class="authors">By: Ryan Culpepper</div>
+      <span class="post-date"><time datetime="2012-03-16">2012-03-16</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/db.html">db</a></span>
+    </div>
+  </header>
+  <p>When implementing a wire protocol, one occasionally needs to know something
+about the wires. This blog post is the story of how the placement of a call to
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/port-buffers.html#%28def._%28%28quote._~23~25kernel%29._flush-output%29%29">flush-output</a></span> caused a <span style="font-style: italic">factor-of-20</span> variation in performance.</p>
+<blockquote><p><span style="font-style: italic">(If you&rsquo;re an experienced network programmer, everything I&rsquo;m about to
+say may be old hat, basic knowledge. It&rsquo;s new to me, though, so I thought I&rsquo;d
+share.)</span></p></blockquote>
+<p>As I <a href="/2012/02/unprepared-queries-vs-statement-caching.html">previously
+mentioned</a>, the Racket <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> library always prepares statements before
+executing them, even if the statement is supplied directly as a SQL string, and
+even if no query parameters are given.</p>
+<p>Prepared statements involve server-side resources. Normally, prepared statements
+(on the server side) are closed when the corresponding prepared statement object
+(on the Racket side) becomes unreachable; a finalizer issues the commands to
+release the server-side resource. A busy program, however, can create prepared
+statements far faster than the garbage collector can finalize them, so it makes
+sense to add an optimization: a prepared statement created for the execution of
+a SQL string is closed immediately after execution. (When the statement cache is
+used, it&rsquo;s more complicated but fundamentally similar&#8212;<wbr></wbr>a set of statements is
+closed at once when the cache is flushed.)</p>
+<p>This &ldquo;close-on-exec&rdquo; optimization works great for PostgreSQL, SQLite, and ODBC
+connections, but it caused the execution of the test suite to slow down
+dramatically&#8212;<wbr></wbr><span style="font-style: italic">by a factor of roughly 20</span>&#8212;<wbr></wbr>for MySQL
+connections. &ldquo;Maybe closing prepared statements is just really slow in MySQL,&rdquo; I
+thought. &ldquo;I&rsquo;ll look into it again right after I implement a few more Really
+Cool Features, like nested transaction support.&rdquo; After all, the lack of
+close-on-exec isn&rsquo;t an issue for short-lived connections&#8212;<wbr></wbr>where &ldquo;short-lived&rdquo;
+means less than several thousand statements. It&rsquo;s not a problem if the
+connection gets occasional breaks long enough for the garbage collector to catch
+up. It&rsquo;s even okay if the same statement is executed (possibly with different
+parameters) many times within a transaction, because of the statement cache. But
+it&rsquo;s a problem for very busy connections that miss (or don&rsquo;t use) the statement
+cache, and basic stress tests cause MySQL connections to quickly hit the
+prepared statement limit and die.</p>
+<p>It turns out that the problem with &ldquo;close-on-exec&rdquo; for MySQL connections is
+due to a bad interaction between the structure of the MySQL protocol and TCP&rsquo;s
+anti-congestion tricks.</p>
+<p>Preparing a statement involves sending a message to the server and getting
+several messages back: parameter and result descriptions, etc. Executing a
+statement involves sending a message to the server and getting several messages
+back: data rows and a status message. Closing a statement involves sending a
+message to the server... and not getting any messages back.</p>
+<p>A <span style="font-style: italic">20x slowdown</span>, for this.</p>
+<p></p>
+<div class="SIntrapara">The problem is that the &ldquo;no-reply&rdquo; close message triggers
+<a href="http://developers.slashdot.org/comments.pl?sid=174457&amp;cid=14515105">an
+unfortunate interaction</a> between two features of TCP:
+<a href="http://en.wikipedia.org/wiki/Nagle%27s_algorithm">Nagle&rsquo;s
+algorithm</a> and
+<a href="http://en.wikipedia.org/wiki/TCP_delayed_acknowledgment">delayed
+ACKs</a>, two heuristic techniques for coalescing tiny packets into larger
+packets. Executing a &ldquo;close-on-exec&rdquo; statement involves the following steps:
+</div>
+<div class="SIntrapara"><ol><li><p>send a prepare message</p></li><li><p>receive some messages</p></li><li><p>send an execute message</p></li><li><p>receive some messages</p></li><li><p>send a close message</p></li></ol></div>
+<div class="SIntrapara">When two &ldquo;close-on-exec&rdquo; statements are executed in quick succession, we get a
+deadly <span style="font-style: italic">write-write-read</span> sequence at the TCP level. Racket sends the close
+message of the first cycle as one TCP packet; the server doesn&rsquo;t send any
+messages back, so the ACK is delayed for some fraction of a second. Racket tries
+to send the prepare message, but the TCP stack buffers it instead, waiting to
+see if Racket wants to send any more data before the ACK for the previous packet
+arrives&#8212;<wbr></wbr>that&rsquo;s Nagle&rsquo;s algorithm. Now Racket is waiting on the server&rsquo;s reply
+to a message that hasn&rsquo;t even been sent yet and won&rsquo;t be sent until the ACK for
+the close message&rsquo;s packet finally arrives.</div>
+<p>One solution, the one used by the MySQL client according to
+<a href="http://bugs.mysql.com/bug.php?id=5787">the bug discussion that
+helped me figure out the problem</a>, is to just disable Nagle&rsquo;s algorithm by
+setting the <span class="stt">TCP_NODELAY</span> socket option. That&rsquo;s not too hard to do in Racket
+using the FFI. Here&rsquo;s the code:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktSym">IPPROTO_TCP</span><span class="hspace">&nbsp;</span><span class="RktVal">6</span><span class="RktPn">)</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktSym">TCP_NODELAY</span><span class="hspace">&nbsp;</span><span class="RktVal">1</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktSym">setsockopt_tcp_nodelay</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Loading_Foreign_Libraries.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29._get-ffi-obj%29%29">get-ffi-obj</a></span><span class="hspace">&nbsp;</span><span class="RktVal">"setsockopt"</span><span class="hspace">&nbsp;</span><span class="RktVal">#f</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/foreign_procedures.html#%28form._%28%28lib._ffi%2Funsafe..rkt%29.__fun%29%29">_fun</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">socket</span><span class="hspace">&nbsp;</span><span class="RktSym">enabled?</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">::</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">socket</span><span class="hspace">&nbsp;</span><span class="RktSym">:</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__int%29%29">_int</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__int%29%29">_int</a></span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/generic-numbers.html#%28def._%28%28quote._~23~25kernel%29._~3d%29%29">=</a></span><span class="hspace">&nbsp;</span><span class="RktSym">IPPROTO_TCP</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__int%29%29">_int</a></span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/generic-numbers.html#%28def._%28%28quote._~23~25kernel%29._~3d%29%29">=</a></span><span class="hspace">&nbsp;</span><span class="RktSym">TCP_NODELAY</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">enabled-ptr</span><span class="hspace">&nbsp;</span><span class="RktSym">:</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/foreign_procedures.html#%28form._%28%28lib._ffi%2Funsafe..rkt%29.__ptr%29%29">_ptr</a></span><span class="hspace">&nbsp;</span><span class="RktSym">i</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__int%29%29">_int</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/generic-numbers.html#%28def._%28%28quote._~23~25kernel%29._~3d%29%29">=</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28quote._~23~25kernel%29._if%29%29">if</a></span><span class="hspace">&nbsp;</span><span class="RktSym">enabled?</span><span class="hspace">&nbsp;</span><span class="RktVal">1</span><span class="hspace">&nbsp;</span><span class="RktVal">0</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__int%29%29">_int</a></span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/generic-numbers.html#%28def._%28%28quote._~23~25kernel%29._~3d%29%29">=</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/ctype.html#%28def._%28%28quote._~23~25foreign%29._compiler-sizeof%29%29">compiler-sizeof</a></span><span class="hspace">&nbsp;</span><span class="RktVal">'</span><span class="RktVal">int</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/function-contracts.html#%28form._%28%28lib._racket%2Fcontract%2Fbase..rkt%29._-~3e%29%29"><span class="nobreak">-&gt;</span></a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">result</span><span class="hspace">&nbsp;</span><span class="RktSym">:</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__int%29%29">_int</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/function-contracts.html#%28form._%28%28lib._racket%2Fcontract%2Fbase..rkt%29._-~3e%29%29"><span class="nobreak">-&gt;</span></a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28quote._~23~25kernel%29._if%29%29">if</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/number-types.html#%28def._%28%28quote._~23~25kernel%29._zero~3f%29%29">zero?</a></span><span class="hspace">&nbsp;</span><span class="RktSym">result</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/void.html#%28def._%28%28quote._~23~25kernel%29._void%29%29">void</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/exns.html#%28def._%28%28quote._~23~25kernel%29._error%29%29">error</a></span><span class="hspace">&nbsp;</span><span class="RktVal">'</span><span class="RktVal">set-tcp-nodelay!</span><span class="hspace">&nbsp;</span><span class="RktVal">"failed"</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktSym">scheme_get_port_socket</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Loading_Foreign_Libraries.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29._get-ffi-obj%29%29">get-ffi-obj</a></span><span class="hspace">&nbsp;</span><span class="RktVal">"scheme_get_port_socket"</span><span class="hspace">&nbsp;</span><span class="RktVal">#f</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/foreign_procedures.html#%28form._%28%28lib._ffi%2Funsafe..rkt%29.__fun%29%29">_fun</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">port</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">::</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">port</span><span class="hspace">&nbsp;</span><span class="RktSym">:</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Pointer_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__racket%29%29">_racket</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">socket</span><span class="hspace">&nbsp;</span><span class="RktSym">:</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/foreign_procedures.html#%28form._%28%28lib._ffi%2Funsafe..rkt%29.__ptr%29%29">_ptr</a></span><span class="hspace">&nbsp;</span><span class="RktSym">o</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__intptr%29%29">_intptr</a></span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/function-contracts.html#%28form._%28%28lib._racket%2Fcontract%2Fbase..rkt%29._-~3e%29%29"><span class="nobreak">-&gt;</span></a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">result</span><span class="hspace">&nbsp;</span><span class="RktSym">:</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/foreign/Numeric_Types.html#%28def._%28%28lib._ffi%2Funsafe..rkt%29.__int%29%29">_int</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/function-contracts.html#%28form._%28%28lib._racket%2Fcontract%2Fbase..rkt%29._-~3e%29%29"><span class="nobreak">-&gt;</span></a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._and%29%29">and</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/number-types.html#%28def._%28%28quote._~23~25kernel%29._positive~3f%29%29">positive?</a></span><span class="hspace">&nbsp;</span><span class="RktSym">result</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">socket</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span></td></tr><tr><td><span class="RktCmt">;</span><span class="RktCmt">&nbsp;</span><span class="RktCmt">set-tcp-nodelay! : tcp-port boolean -&gt; void</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">set-tcp-nodelay!</span><span class="hspace">&nbsp;</span><span class="RktSym">port</span><span class="hspace">&nbsp;</span><span class="RktSym">enabled?</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">[</span><span class="RktSym">socket</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">scheme_get_port_socket</span><span class="hspace">&nbsp;</span><span class="RktSym">port</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">setsockopt_tcp_nodelay</span><span class="hspace">&nbsp;</span><span class="RktSym">socket</span><span class="hspace">&nbsp;</span><span class="RktSym">enabled?</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Calling <span class="RktSym">set-tcp-nodelay!</span> on MySQL connections&rsquo; TCP ports reduces the
+real running time of the <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> test suite from 54 seconds to 2.8
+seconds. Success!</p>
+<p>But there&rsquo;s an even simpler solution that doesn&rsquo;t involve fussing with socket
+options. There&rsquo;s no great urgency to the close statement message. So instead of
+<span style="font-style: italic">sending</span> it at the end of the query cycle, we just <span style="font-style: italic">buffer</span> it
+without flushing output. That way it gets sent at the start of the next query
+cycle in the same packet as the prepare message. The prepare message causes the
+server to send data back immediately, eliminating the ACK delay. This solution
+performs just as well as the <span class="stt">TCP_NODELAY</span> solution, and the changes to the
+code are minimal.</p>
+  <footer>
+    <nav class="post-navigation" aria-label="Post Navigation">
+  <div class="pure-menu">
+  <ul class="pure-menu-list">
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2013/06/define-vs-attach"
+         aria-label="Previous">
+        <span aria-hidden="true">&larr; define vs attach</span>
+      </a>
+    </li>
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2012/02/unprepared-queries-vs-statement-caching"
+         aria-label="Next">
+        <span aria-hidden="true">unprepared queries vs statement caching &rarr;</span>
+      </a>
+    </li>
+  </ul>
+  </div>
+</nav>
+  </footer>
+</article>
+
+
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2012 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

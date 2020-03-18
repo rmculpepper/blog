@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>syntax-parse and literals</title>
+
+    <meta name="keywords" content="racket,macros">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/2011/09/syntax-parse-and-literals">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/all.atom.xml">
+    <link rel="prev" href="/blog/2011/09/definitions-vs-enclosing-binding-forms">
+    <link rel="next" href="/blog/2011/09/macros-and-literals">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+
+
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">syntax-parse and literals</h1>
+    <div class="post-meta">
+      <div class="authors">By: Ryan Culpepper</div>
+      <span class="post-date"><time datetime="2011-09-09">2011-09-09</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/macros.html">macros</a></span>
+    </div>
+  </header>
+  <p>In <a href="/blog/2011/09/macros-and-literals">my
+last post</a>, I talked about macros and referential auxiliary
+identifiers&#8212;<wbr></wbr>what we usually call a macro&rsquo;s &ldquo;literals.&rdquo; Scheme
+macro systems only get it half right, though, because while they
+compare identifiers using referential equality (i.e., using the
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxcmp.html#%28def._%28%28quote._~23~25kernel%29._free-identifier~3d~3f%29%29">free-identifier=?</a></span> predicate), they allow literals to refer to
+nonexistent bindings. While the comparison is well-defined via the
+definition of <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxcmp.html#%28def._%28%28quote._~23~25kernel%29._free-identifier~3d~3f%29%29">free-identifier=?</a></span>, at a higher level the idea
+is nonsensical.</p>
+<p>In contrast, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Parsing_Syntax.html#%28form._%28%28lib._syntax%2Fparse..rkt%29._syntax-parse%29%29">syntax-parse</a></span> requires that every literal
+refer to some binding. (I&rsquo;ll sometimes refer to this requirement as
+the <span style="font-style: italic">is-bound</span> property for short.) This requirement is
+problematic in a different way. Specifically, this property cannot be
+checked statically (that is, when the syntax-parse expression
+containing the literal is compiled).</p>
+<p>That might strike you as bizarre or unlikely. After all, you can
+easily imagine checking that a <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax-rules%29%29">syntax-rules</a></span> macro, say,
+satisfies the <span style="font-style: italic">is-bound</span> property. But in Racket, not every macro
+uses <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax-rules%29%29">syntax-rules</a></span>, and&#8212;more importantly&#8212;not every bit of
+syntax-analyzing code is a macro. And both of these facts have to do
+with <a class="techoutside Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/eval-model.html#%28tech._phase%29"><span class="techinside">phases</span></a>.</p>
+<p>In Racket, an identifier might mean one thing in one phase
+and another thing in a different phase. Actually, this is true for
+every identifier: it is bound in finitely many phases and unbound in
+infinitely many more. When an identifier is bound in multiple phases,
+it is usually bound to the same thing in each phase, but that is a
+consequence of the way we write (tasteful) code, not a rule imposed by
+the macro system. Consequently, identifier comparisons must take phase
+levels into account, and Racket&rsquo;s version of
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxcmp.html#%28def._%28%28quote._~23~25kernel%29._free-identifier~3d~3f%29%29">free-identifier=?</a></span> takes an optional phase level argument,
+which defaults to the value of
+<span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._syntax-local-phase-level%29%29">syntax-local-phase-level</a></span><span class="RktPn">)</span>, which usually turns out to be
+just what you want.</p>
+<p>There are two modes of dealing with syntax in Racket, which I will
+label &ldquo;eval&rdquo; and &ldquo;macro.&rdquo; In &ldquo;eval&rdquo; mode, your code is just an
+ordinary program that manipulates syntax. Perhaps it takes some code,
+expands it, analyzes the result, and instruments it (e.g.,
+<a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/errortrace/using-errortrace.html"><span class="RktSym">errortrace</span></a>). Perhaps it constructs code to be executed
+(e.g., parts of DrRacket&rsquo;s &ldquo;module language&rdquo; implementation). In any
+case, your program is running at phase 0 and it deals with syntax
+which represents another program at phase 0.</p>
+<p>In &ldquo;macro&rdquo; mode, on the other hand, your code is either a macro
+definition or a helper to a macro definition. Your code is runs at
+phase 1 and deals with syntax representing code at phase 0. Actually,
+since your macro might be used in the implementation of some other
+macro (possibly itself being used in the implementation a macro, and
+so on), your code runs at phase N+1 and deals with syntax representing
+code at phase N. You&rsquo;d better not depend on the particular value of N,
+either.</p>
+<p>So in &ldquo;eval&rdquo; mode, you generally want to compare identifiers at phase
+0, but in &ldquo;macro&rdquo; mode, you want to compare identifiers at phase N-1,
+where N is the phase of the code currently executing. No problem!
+Since &ldquo;macro&rdquo; code is always at phase 1 or higher, these situations
+are distinguishable, and we can choose the right default for each of
+them:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._syntax-local-phase-level%29%29">syntax-local-phase-level</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._cond%29%29">cond</a></span><span class="hspace">&nbsp;</span><span class="RktPn">[</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/generic-numbers.html#%28def._%28%28quote._~23~25kernel%29._~3d%29%29">=</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">phase-of-executing-code</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktVal">0</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktVal">0</span><span class="RktPn">]</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">[</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._else%29%29">else</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/generic-numbers.html#%28def._%28%28quote._~23~25kernel%29._sub1%29%29">sub1</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">phase-of-executing-code</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>So what&rsquo;s the problem?</p>
+<p>Consider the following bit of code:</p>
+<div class="SCodeFlow"><blockquote class="Rfilebox"><p class="Rfiletitle"><span class="Rfilename"><span class="stt">"is-lambda.rkt"</span></span></p><blockquote class="Rfilecontent"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/guide/Module_Syntax.html#%28part._hash-lang%29"><span class="RktMod">#lang</span></a><span class="hspace">&nbsp;</span><a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/index.html"><span class="RktSym">racket</span></a></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._require%29%29">require</a></span><span class="hspace">&nbsp;</span><span class="RktVar">???</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span></td></tr><tr><td><span class="RktCmt">;</span><span class="RktCmt">&nbsp;</span><span class="RktCmt">is-lambda? : syntax -&gt; boolean</span></td></tr><tr><td><span class="RktCmt">;</span><span class="RktCmt">&nbsp;</span><span class="RktCmt">Determines if this is a lambda form.</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">is-lambda?</span><span class="hspace">&nbsp;</span><span class="RktSym">stx</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Parsing_Syntax.html#%28form._%28%28lib._syntax%2Fparse..rkt%29._syntax-parse%29%29">syntax-parse</a></span><span class="hspace">&nbsp;</span><span class="RktSym">stx</span><span class="hspace">&nbsp;</span><span class="RktPn">#:literals</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">[</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktSym">formals</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktSym">body</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktVal">#t</span><span class="RktPn">]</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">[</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29.__%29%29">_</a></span><span class="hspace">&nbsp;</span><span class="RktVal">#f</span><span class="RktPn">]</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._provide%29%29">provide</a></span><span class="hspace">&nbsp;</span><span class="RktSym">is-lambda?</span><span class="RktPn">)</span></td></tr></tbody></table></blockquote></blockquote></div>
+<p>What phase will be used for the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span> literal
+comparison?</p>
+<p>Well, if this code is used as a macro helper&#8212;<wbr></wbr>that is, this module is
+required <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._for-syntax%29%29">for-syntax</a></span>&#8212;<wbr></wbr>then the phase will be the phase of the
+module minus 1, so the module had better have a <span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._require%29%29">require</a></span><span class="stt"> </span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._for-template%29%29">for-template</a></span><span class="stt"> </span><span class="RktSym">racket</span><span class="RktPn">)</span><span class="RktPn">)</span>. On the other hand, if this code is used in
+&ldquo;eval&rdquo; mode, the comparison will be done with respect to phase 0, so
+we need just <span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._require%29%29">require</a></span><span class="stt"> </span><span class="RktSym">racket</span><span class="RktPn">)</span>&#8212;<wbr></wbr>of course, we have that from
+the module&rsquo;s language anyway.</p>
+<p>(Actually, it&rsquo;s even worse than that. Racket&rsquo;s
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxtrans.html#%28def._%28%28quote._~23~25kernel%29._syntax-local-phase-level%29%29">syntax-local-phase-level</a></span> isn&rsquo;t as simple as my definition
+above; for example, it seems to always be 0 for the initialization of
+a module, even if the module is instantiated at a phase greater than
+1.)</p>
+<p>So, should what phase(s) should we check that <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span> is bound
+in? Checking only one is not adequate to enforce the <span style="font-style: italic">is-bound</span>
+property, but demanding both is unreasonable&#8212;<wbr></wbr>adding a require line
+is costly at best, semantics-altering at worst. Thus the check must be
+done dynamically.</p>
+<p>Well, not entirely. It turns out that checking if an identifier is
+bound is relatively expensive. And while we don&rsquo;t know what phase(s)
+the comparison will actually use at run time, we know it&rsquo;s highly
+likely to be either N or N-1, where N is the phase of the module. If
+we pre-compute those answers at compile time, we can use them as a
+fast-path check that only requires numeric comparison (cheap)... and
+if we get a really weird phase level, we can revert to the slow check.</p>
+<p>And that, I think, is the best you can do with literals and standard
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxcmp.html#%28def._%28%28quote._~23~25kernel%29._free-identifier~3d~3f%29%29">free-identifier=?</a></span>. On the other hand, what if you had a
+cross-phase identifier comparison, one that determines if
+<span style="font-style: italic">identifierA</span> refers to the same binding at <span style="font-style: italic">phaseA</span> that
+<span style="font-style: italic">identifierB</span> refers to at <span style="font-style: italic">phaseB</span>? Then you could fix the
+phase for the literal identifier and check it at compile time. That&rsquo;s
+how <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Parsing_Syntax.html#%28form._%28%28lib._syntax%2Fparse..rkt%29._syntax-parse%29%29">syntax-parse</a></span>&rsquo;s literal-sets work.</p>
+  <footer>
+    <nav class="post-navigation" aria-label="Post Navigation">
+  <div class="pure-menu">
+  <ul class="pure-menu-list">
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2011/09/definitions-vs-enclosing-binding-forms"
+         aria-label="Previous">
+        <span aria-hidden="true">&larr; definitions vs enclosing binding forms</span>
+      </a>
+    </li>
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2011/09/macros-and-literals"
+         aria-label="Next">
+        <span aria-hidden="true">macros and literals &rarr;</span>
+      </a>
+    </li>
+  </ul>
+  </div>
+</nav>
+  </footer>
+</article>
+
+
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2011 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

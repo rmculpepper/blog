@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>definitions vs enclosing binding forms</title>
+
+    <meta name="keywords" content="racket">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/2011/09/definitions-vs-enclosing-binding-forms">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/all.atom.xml">
+    <link rel="prev" href="/blog/2011/10/lazy-module-loading">
+    <link rel="next" href="/blog/2011/09/syntax-parse-and-literals">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+
+
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">definitions vs enclosing binding forms</h1>
+    <div class="post-meta">
+      <div class="authors">By: Ryan Culpepper</div>
+      <span class="post-date"><time datetime="2011-09-27">2011-09-27</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a></span>
+    </div>
+  </header>
+  <p>There are two kinds of binding forms in Racket: definitions and
+enclosing binding forms. The scope of a binding introduced by an
+enclosing binding form is entirely evident: it&rsquo;s one (or more) of the
+form&rsquo;s sub-terms. For example, in</p>
+<div class="SCodeFlow"><p><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">var</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktVar">body</span><span class="RktPn">)</span></p></div>
+<p>the scope of the <span class="RktVar">var</span> bindings is <span class="RktVar">body</span>. In
+contrast, the scope of a definition is determined by its context: the
+enclosing <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span> body, for example, or the enclosing
+module&#8212;<wbr></wbr>except that scope is too simple a term for how bindings work
+in such contexts. Enclosing binding forms are simpler and cleaner but
+weaker; definition forms are more powerful, but have a more
+complicated binding structure. Definitions also have the pleasant
+property of reducing rightward code drift.</p>
+<p>Definitions are more powerful than enclosing binding forms because
+they can be used to construct more binding structures. Definitions are
+composable building blocks for environments; a crucial property of
+definitions is that they are complete entities on their own, absent
+the expressions (or more generally, forms) that will be used in their
+bindings&rsquo; scope. The expressions in the scope of an enclosing binding
+form, on the other hand, are fixed; they&rsquo;re part of the term.</p>
+<p>It is easy to construct an enclosing form given a definition form, but
+it is difficult to construct a definition form given an enclosing
+form. For example, consider the creation of structure types; there is
+a <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span> definition form that defines the constructor,
+predicate, accessors, etc. Here&rsquo;s how to turn that into an enclosing
+binding form:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktKw">let-struct</span><span class="hspace">&nbsp;</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktVar">body</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span>&#8658;<span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span><span class="hspace">&nbsp;</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktVar">body</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>We just use <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span> to open up a new local definition context,
+use <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span> to put its bindings in that context, and place
+<span class="RktVar">body</span> in that context&#8212;<wbr></wbr>but within its own <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span>, to
+prevent it from perhaps attempting to insert its own conflicting
+bindings into the definition context.</p>
+<p>If you&rsquo;re finicky, perhaps you&rsquo;ve noticed that this is actually more
+of a <span class="RktKw">letrec-struct</span>, since the scope of the introduced names
+includes any sub-expressions of the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span> form&#8212;<wbr></wbr>or would,
+if our macro supported the same options that <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span> does. We
+could give <span class="RktKw">let-struct</span> true <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span>-scoping instead of
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._letrec%29%29">letrec</a></span>-scoping by lifting any sub-expressions out of the
+definition context. For example:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktKw">let-struct</span><span class="hspace">&nbsp;</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">#:inspector</span><span class="hspace">&nbsp;</span><span class="RktVar">insp-expr</span><span class="hspace">&nbsp;</span><span class="RktVar">body</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span>&#8658;<span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">[</span><span class="RktSym">insp</span><span class="hspace">&nbsp;</span><span class="RktVar">insp-expr</span><span class="RktPn">]</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span><span class="hspace">&nbsp;</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktVar">body</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>More work, yes, but still feasible. (Alternatively, I conjecture that
+we could use marks and rename-transformers in a clever way to hide the
+struct names from <span class="RktVar">insp-expr</span> but make them available to
+<span class="RktVar">body</span>. See if you can work it out. You might find
+<a href="http://www.ccs.neu.edu/scheme/pubs/#gpce05-cof">Syntactic
+Abstraction in Component Interfaces</a> helpful. Alternatively, you could
+try using internal-definition-contexts; see the implementation of
+<a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/splicing.html"><span class="RktSym">racket/splicing</span></a>, for example.)</p>
+<p>What would it take to go the other direction? Here&rsquo;s a first stab at
+it:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span><span class="hspace">&nbsp;</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span>&#8658;<span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28quote._~23~25kernel%29._define-values%29%29">define-values</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktVar">name?</span><span class="hspace">&nbsp;</span><span class="RktVar">name-field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktKw">let-struct</span><span class="hspace">&nbsp;</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/values.html#%28def._%28%28quote._~23~25kernel%29._values%29%29">values</a></span><span class="hspace">&nbsp;</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktVar">name?</span><span class="hspace">&nbsp;</span><span class="RktVar">name-field</span><span class="hspace">&nbsp;</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._......%29%29">...</a></span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Bzzzt, wrong: <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span> is supposed to bind <span class="RktVar">name</span> as a
+macro that not only acts as the constructor but also records
+compile-time information about the struct type that can be used by
+other macros like <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/match.html#%28form._%28%28lib._racket%2Fmatch..rkt%29._match%29%29">match</a></span>, the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct-out%29%29">struct-out</a></span> provide
+form, etc.</p>
+<p>It&rsquo;s easy to extrude a value from the scope it was created in... at
+least, many modern languages have mostly figured it out, although some
+still manage to bungle it. But there&rsquo;s no way to extrude a macro from
+a local scope to an outer scope. And if there were, we&rsquo;d have to
+rethink what references to local names no longer in scope
+meant&#8212;<wbr></wbr>that&rsquo;s why I called it extrusion: because it reminds me of the
+type extrusion problem.</p>
+<p>We could, of course, just re-compute the macro part of the
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._struct%29%29">struct</a></span> expansion. But now we&rsquo;re up to 1.5 implementations of
+struct-related macros. Better to do the work once in the definition
+form and naively reuse it to create <span class="RktKw">let-struct</span> (if we even
+care about <span class="RktKw">let-struct</span>). Advantage: definitions.</p>
+<p>This power comes at a cost, though, namely the <span style="font-style: italic">two-pass expansion of
+definition contexts</span>.</p>
+<p>(to be continued...)</p>
+  <footer>
+    <nav class="post-navigation" aria-label="Post Navigation">
+  <div class="pure-menu">
+  <ul class="pure-menu-list">
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2011/10/lazy-module-loading"
+         aria-label="Previous">
+        <span aria-hidden="true">&larr; lazy module loading</span>
+      </a>
+    </li>
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2011/09/syntax-parse-and-literals"
+         aria-label="Next">
+        <span aria-hidden="true">syntax-parse and literals &rarr;</span>
+      </a>
+    </li>
+  </ul>
+  </div>
+</nav>
+  </footer>
+</article>
+
+
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2011 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

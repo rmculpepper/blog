@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>macros, parameters; binding, and reference</title>
+
+    <meta name="keywords" content="racket,macros">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/2006/04/macros-parameters-binding-and-reference">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/all.atom.xml">
+    <link rel="prev" href="/blog/2011/09/macros-and-literals">
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+
+
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">macros, parameters; binding, and reference</h1>
+    <div class="post-meta">
+      <div class="authors">By: Ryan Culpepper</div>
+      <span class="post-date"><time datetime="2006-04-08">2006-04-08</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/macros.html">macros</a></span>
+    </div>
+  </header>
+  <p>Danny Yoo had an interesting question on the plt-scheme mailing list
+recently. At first it seemed like your standard non-hygienic, &ldquo;I want
+this to mean something in here&rdquo; macro question. I used to group
+macros into three levels of &ldquo;hygienicness&rdquo;: the hygienic ones, the
+ones that are morally hygienic in that the names they introduce are
+based on their input, and the totally non-hygienic ones that have a
+fixed name that they stick into the program. An example of the middle
+set is <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-struct%29%29">define-struct</a></span>, and an example of the third set is a
+loop construct that binds the name <span class="RktKw">yield</span> in its body.</p>
+<p>The third class used to offend me from a purist&rsquo;s (semi-purist?)
+perspective. But it&rsquo;s a very reasonable thing to want to do. Consider
+the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._class%29%29">class</a></span> macro and the names it uses to do interesting
+things: <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._super%29%29">super</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._public%29%29">public</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._field%29%29">field</a></span>,
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._init%29%29">init</a></span>, and so on. It depends on those particular names.</p>
+<p>Danny Yoo was writing a generator library. He had a
+<span class="RktKw">define-generator</span> form, used like this:</p>
+<div class="SCodeFlow"><p><span class="RktPn">(</span><span class="RktKw">define-generator</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktVar">name</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktVar">args</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktVar">body</span><span class="RktPn">)</span></p></div>
+<p>and he wanted <span class="RktKw">yield</span> to have a particular meaning inside of
+the generator body. He had used the usual non-hygienic technique of
+creating the right <span class="RktKw">yield</span> identifier using
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxops.html#%28def._%28%28quote._~23~25kernel%29._datum-~3esyntax%29%29">datum-&gt;syntax</a></span>, but he was asking for other ideas.</p>
+<p>Dave commented that non-hygienic macros typically do not play nicely
+together; that is, it can be hard to write other macros that expand
+into them, because you have to think about what version of the code
+you want to bind the variable in, and you can&rsquo;t always tell... it&rsquo;s a
+mess. Dave recommended creating two versions of the macro: a
+non-hygienic front-end that forged the <span class="RktKw">yield</span> identifier, and
+a hygienic back-end that did the actual implementation. People who
+wanted to further abstract over generator definitions could use the
+hygienic version.</p>
+<p>But there&rsquo;s another way to look at it, and that&rsquo;s what I replied to
+the mailing list. It got me thinking about the similarities between
+macros and normal programming, and the different techniques we use.</p>
+<p><span style="font-style: italic">My answer begins here:</span></p>
+<p>Another way you can do this that avoids the problems Dave mentioned is
+to use a &ldquo;syntax parameter.&rdquo; It&rsquo;s like a parameter, but for
+macros. Here&rsquo;s how:</p>
+<p>Consider a related problem: what if we wanted <span class="RktKw">yield</span> to work
+in the <span style="font-style: italic">dynamic extent</span> of a call to a generator, rather than
+just lexically in the generator&rsquo;s body? Here&rsquo;s how you&rsquo;d do it:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktSym">current-yielder</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/parameters.html#%28def._%28%28quote._~23~25kernel%29._make-parameter%29%29">make-parameter</a></span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">value</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/exns.html#%28def._%28%28quote._~23~25kernel%29._error%29%29">error</a></span><span class="hspace">&nbsp;</span><span class="RktVal">'</span><span class="RktKw">yield</span><span class="hspace">&nbsp;</span><span class="RktVal">"not in a generator"</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktKw">yield</span><span class="hspace">&nbsp;</span><span class="RktSym">value</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">(</span><span class="RktSym">current-yielder</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktSym">value</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Then <span class="RktKw">define-dynamic-generator</span> wraps the generator function
+with something that sets the <span class="RktSym">current-yielder</span> parameter.</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-syntax%29%29">define-syntax</a></span><span class="hspace">&nbsp;</span><span class="RktKw">define-dynamic-generator</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax-rules%29%29">syntax-rules</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">[</span><span class="RktPn">(</span><span class="RktKw">define-generator</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktSym">args</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktSym">body</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktSym">args</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">[</span><span class="RktSym">name</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">yielder</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/parameters.html#%28form._%28%28lib._racket%2Fprivate%2Fmore-scheme..rkt%29._parameterize%29%29">parameterize</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">[</span><span class="RktSym">current-yielder</span><span class="hspace">&nbsp;</span><span class="RktSym">yielder</span><span class="RktPn">]</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">. </span><span class="RktSym">body</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">make-generator</span><span class="hspace">&nbsp;</span><span class="RktSym">name</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>(As an aside, this version passes your test suite, too.)</p>
+<p>Using parameters, you can change an issue of <span style="font-style: italic">binding</span> into an
+issue of <span style="font-style: italic">common reference</span> to a side-channel of communication
+like a parameter or a box.</p>
+<p>Syntax parameters work the same way. You agree on a keyword:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._require%29%29">require</a></span><span class="hspace">&nbsp;</span><span class="RktSym">racket/stxparam</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxparam.html#%28form._%28%28lib._racket%2Fstxparam..rkt%29._define-syntax-parameter%29%29">define-syntax-parameter</a></span><span class="hspace">&nbsp;</span><span class="RktKw">yield</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">stx</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/exns.html#%28def._%28%28quote._~23~25kernel%29._raise-syntax-error%29%29">raise-syntax-error</a></span><span class="hspace">&nbsp;</span><span class="RktVal">#f</span><span class="hspace">&nbsp;</span><span class="RktVal">"used outside of a generator"</span><span class="hspace">&nbsp;</span><span class="RktSym">stx</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Then you when you want some code to be able to use yield, like the
+body of your generator function, you use <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxparam.html#%28form._%28%28lib._racket%2Fstxparam..rkt%29._syntax-parameterize%29%29">syntax-parameterize</a></span>:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-syntax%29%29">define-syntax</a></span><span class="hspace">&nbsp;</span><span class="RktKw">define-generator</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax-rules%29%29">syntax-rules</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">[</span><span class="RktPn">(</span><span class="RktKw">define-generator</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktSym">args</span><span class="RktPn">)</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktSym">body</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">name</span><span class="hspace">&nbsp;</span><span class="RktPn">. </span><span class="RktSym">args</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/let.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._let%29%29">let</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">[</span><span class="RktSym">name</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/lambda.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._lambda%29%29">lambda</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">yielder</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxparam.html#%28form._%28%28lib._racket%2Fstxparam..rkt%29._syntax-parameterize%29%29">syntax-parameterize</a></span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktPn">[</span><span class="RktKw">yield</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax-rules%29%29">syntax-rules</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">[</span><span class="RktPn">(</span><span class="RktKw">yield</span><span class="hspace">&nbsp;</span><span class="RktSym">value</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">yielder</span><span class="hspace">&nbsp;</span><span class="RktSym">value</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">. </span><span class="RktSym">body</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym">make-generator</span><span class="hspace">&nbsp;</span><span class="RktSym">name</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">]</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>This use of <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxparam.html#%28form._%28%28lib._racket%2Fstxparam..rkt%29._syntax-parameterize%29%29">syntax-parameterize</a></span> changes the meaning of
+<span class="RktKw">yield</span> in the body to just call the supplied <span class="RktSym">yielder</span>
+function. If you want to be able to use <span class="RktKw">yield</span> as an
+expression by itself, rather than requiring it to be called, you can
+use <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax-id-rules%29%29">syntax-id-rules</a></span> to define an identifier macro instead.</p>
+<p>By using <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxparam.html#%28form._%28%28lib._racket%2Fstxparam..rkt%29._syntax-parameterize%29%29">syntax-parameterize</a></span>, <span class="RktKw">define-generator</span>
+doesn&rsquo;t <span style="font-style: italic">bind</span> <span class="RktKw">yield</span>; it <span style="font-style: italic">refers to</span>
+<span class="RktKw">yield</span>. Any macro that expands into a generator definition
+will still be producing a reference to <span class="RktKw">yield</span>, and references
+don&rsquo;t suffer the same interactions with hygiene that bindings do.</p>
+  <footer>
+    <nav class="post-navigation" aria-label="Post Navigation">
+  <div class="pure-menu">
+  <ul class="pure-menu-list">
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2011/09/macros-and-literals"
+         aria-label="Previous">
+        <span aria-hidden="true">&larr; macros and literals</span>
+      </a>
+    </li>
+
+  </ul>
+  </div>
+</nav>
+  </footer>
+</article>
+
+
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2006 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

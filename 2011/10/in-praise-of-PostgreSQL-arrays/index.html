@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>in praise of PostgreSQL arrays</title>
+
+    <meta name="keywords" content="racket,db">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/2011/10/in-praise-of-PostgreSQL-arrays">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/all.atom.xml">
+    <link rel="prev" href="/blog/2012/02/unprepared-queries-vs-statement-caching">
+    <link rel="next" href="/blog/2011/10/lazy-module-loading">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+
+
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">in praise of PostgreSQL arrays</h1>
+    <div class="post-meta">
+      <div class="authors">By: Ryan Culpepper</div>
+      <span class="post-date"><time datetime="2011-10-31">2011-10-31</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/db.html">db</a></span>
+    </div>
+  </header>
+  <p>I just added support for
+<a href="http://www.postgresql.org/docs/current/static/arrays.html">PostgreSQL
+arrays</a> to the <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> library. While there are some uses
+of arrays that are iffy from a database design standpoint, there&rsquo;s one
+use that weighs overwhelmingly in their favor: avoiding dynamic
+generation of SQL <span class="stt">IN</span> comparisons.</p>
+<p>Everyone knows not to &ldquo;parameterize&rdquo; SQL code by smashing strings
+together, <a href="http://xkcd.com/327/">right?</a></p>
+<p>That is, don&rsquo;t do this:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">get-history</span><span class="hspace">&nbsp;</span><span class="RktSym">name</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._query-rows%29%29">query-rows</a></span><span class="hspace">&nbsp;</span><span class="RktSym">the-db</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/Writing.html#%28def._%28%28quote._~23~25kernel%29._format%29%29">format</a></span><span class="hspace">&nbsp;</span><span class="RktVal">"SELECT url FROM fb.global_web_tracker WHERE name='~a'"</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym">name</span><span class="RktPn">)</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>Instead, do this:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">get-history</span><span class="hspace">&nbsp;</span><span class="RktSym">name</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._query-rows%29%29">query-rows</a></span><span class="hspace">&nbsp;</span><span class="RktSym">the-db</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktVal">"SELECT url FROM fb.global_web_tracker WHERE name=$1"</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym">name</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>But what if we want to search multiple names simultaneously?</p>
+<p>If we know the names statically, we can use <span class="stt">IN</span>:</p>
+<blockquote class="leftindent"><table cellpadding="0" cellspacing="0" class="SVerbatim"><tbody><tr><td><p><span class="stt">SELECT url FROM fb.global_web_tracker</span></p></td></tr><tr><td><p><span class="stt">WHERE name IN ('Alice', 'Bob')</span></p></td></tr></tbody></table></blockquote>
+<p>And if the names aren&rsquo;t fixed and known in advance? Looks like a job
+for string smashing ... (but don&rsquo;t!)</p>
+<p>A clean, but awful, alternative is to create a temporary table, insert
+each of the strings into it, perform the query with a sub-select or
+join on the temporary table, then drop the temporary table. This
+works, and it avoids the possibility of SQL injection. But isn&rsquo;t the
+point of a declarative language (like SQL, ostensibly) to be able to
+talk about information without having to first tell the system where
+to put it?</p>
+<p>In PostgreSQL, the array solution is clean and simple, although
+<a href="http://www.postgresql.org/docs/8.2/static/functions-comparisons.html#AEN14122">the
+syntax</a> is a bit peculiar:</p>
+<blockquote class="leftindent"><table cellpadding="0" cellspacing="0" class="SVerbatim"><tbody><tr><td><p><span class="stt">SELECT url FROM fb.global_web_tracker</span></p></td></tr><tr><td><p><span class="stt">WHERE name = ANY ($1)</span></p></td></tr></tbody></table></blockquote>
+<p>The parameter <span class="stt">$1</span> here must by an array, probably with a type like
+<span class="stt">TEXT[]</span>, assuming <span class="stt">name</span> is <span class="stt">TEXT</span>. The parentheses around
+<span class="stt">$1</span> are significant.</p>
+<p>Here&rsquo;s what the code looks like using the recently-updated
+<a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/index.html"><span class="RktSym">db</span></a> library:</p>
+<div class="SCodeFlow"><table cellpadding="0" cellspacing="0" class="RktBlk"><tbody><tr><td><span class="RktPn">(</span><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define%29%29">define</a></span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym">get-history</span><span class="hspace">&nbsp;</span><span class="RktSym">names</span><span class="RktPn">)</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/query-api.html#%28def._%28%28lib._db%2Fbase..rkt%29._query-rows%29%29">query-rows</a></span><span class="hspace">&nbsp;</span><span class="RktSym">the-db</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktVal">"SELECT url FROM fb.global_web_tracker WHERE name = ANY ($1)"</span></td></tr><tr><td><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="RktSym">names</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr><tr><td><span class="RktPn">(</span><span class="RktSym">get-history</span><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/pairs.html#%28def._%28%28quote._~23~25kernel%29._list%29%29">list</a></span><span class="hspace">&nbsp;</span><span class="RktVal">"Alice"</span><span class="hspace">&nbsp;</span><span class="RktVal">"Bob"</span><span class="RktPn">)</span><span class="RktPn">)</span></td></tr></tbody></table></div>
+<p>In general, array values are actually represented with a dedicated
+structure type, <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/db/util.html#%28def._%28%28lib._db%2Futil%2Fpostgresql..rkt%29._pg-array%29%29">pg-array</a></span>, that accommodates multi-dimensional
+arrays, non-standard starting indexes, etc. But lists are
+automatically converted, for the sake of simplicity.</p>
+<p>Very preliminary research suggests that arrays might be mentioned in
+one of the later SQL standards. MySQL and SQLite support them,
+though. Oracle and DB2 seem to have some sort of support, but getting
+to it through ODBC would be tricky, if it&rsquo;s even possible. So for now,
+advantage PostgreSQL.</p>
+  <footer>
+    <nav class="post-navigation" aria-label="Post Navigation">
+  <div class="pure-menu">
+  <ul class="pure-menu-list">
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2012/02/unprepared-queries-vs-statement-caching"
+         aria-label="Previous">
+        <span aria-hidden="true">&larr; unprepared queries vs statement caching</span>
+      </a>
+    </li>
+    <li class="pure-menu-item">
+      <a class="pure-menu-link" href="/blog/2011/10/lazy-module-loading"
+         aria-label="Next">
+        <span aria-hidden="true">lazy module loading &rarr;</span>
+      </a>
+    </li>
+  </ul>
+  </div>
+</nav>
+  </footer>
+</article>
+
+
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2011 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>

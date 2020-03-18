@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+
+    <title>Posts tagged 'macros'</title>
+
+    <meta name="keywords" content="macros">
+    <meta name="canonical" href="https://rmculpepper.github.io/blog/tags/macros.html">
+    <meta rel="alternate" type="application/atom+xml" title="Atom Feed"
+          href="/blog/feeds/macros.atom.xml">
+
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/blog/favicon.png">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css"
+          integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://unpkg.com/purecss@1.0.1/build/grids-responsive-min.css"
+          integrity="sha384-e+NM0rMilIXo+lz6+dXhoHMjd2iTSxNsCHpqkvuSBsAhwMDRF/Wn2QRRNaLxTcN/"
+          crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pure-blog.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/pygments.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/scribble.css">
+    <link rel="stylesheet" type="text/css" href="/blog/css/custom.css">
+
+  </head>
+  <body>
+
+
+    <div class="layout pure-g">
+      <div class="titlebar pure-u-1">
+        <div class="header">
+          <h1 class="site-title"><a href="/blog/">One Racketeer</a></h1>
+
+          <h2 class="site-tagline">the blog of Ryan Culpepper</h2>
+          <h2 class="site-alt-tagline">
+            (blog-of ryanc@racket-lang.org)
+          </h2>
+          <nav class="nav">
+            <ul class="nav-list">
+              <li class="nav-item">
+                <a class="pure-button" href="/blog/tags/db.html">db</a>
+              </li><li class="nav-item">
+                     <a class="pure-button" href="/blog/tags/macros.html">macros</a>
+                   </li><li class="nav-item">
+                          <a class="pure-button" href="/blog/tags/racket.html">racket</a>
+                        </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="content pure-u-1">
+
+        <div class="content-inner">
+          <div>
+            <div style="float: right">
+              <a class="" href="/blog/feeds/macros.atom.xml">atom</a>
+            </div>
+            <h1 class="content-subhead">
+              Posts tagged <em>macros</em>
+            </h1>
+          </div>
+
+          <article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2018/11/new-syntax-template-features'>new syntax template features</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2018-11-22">2018-11-22</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/macros.html">macros</a></span>
+    </div>
+  </header>
+  <p>In Racket 7, the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax%29%29">syntax</a></span> form supports two new template subforms:</p>
+<ul><li><p><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._~7e~40%29%29">~@</a></span> (&ldquo;splice&rdquo;) splices the result of its subtemplate (which must
+produce a syntax list) into the enclosing list template, and</p></li><li><p><span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._~7e~3f%29%29">~?</a></span> (&ldquo;try&rdquo;) chooses between alternative subtemplates depending
+on whether their pattern variables have &ldquo;absent&rdquo; values.</p></li></ul>
+<p>These features originated in <a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Experimental.html#%28mod-path._syntax%2Fparse%2Fexperimental%2Ftemplate%29"><span class="RktSym">syntax/parse/experimental/template</span></a>:
+the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Experimental.html#%28form._%28%28lib._syntax%2Fparse%2Fexperimental%2Ftemplate..rkt%29._template%29%29">template</a></span> form was like an extended version of <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax%29%29">syntax</a></span>, and
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Experimental.html#%28form._%28%28lib._syntax%2Fparse%2Fexperimental%2Ftemplate..rkt%29._~3f~40%29%29">?@</a></span> and <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Experimental.html#%28form._%28%28lib._syntax%2Fparse%2Fexperimental%2Ftemplate..rkt%29._~3f~3f%29%29">??</a></span> were the splicing forms and the try/else template
+forms, respectively. The names were changed to <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._~7e~40%29%29">~@</a></span> and <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._~7e~3f%29%29">~?</a></span> to
+avoid name collisions with other libraries. In Racket 7, the old
+<a class="RktModLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Experimental.html#%28mod-path._syntax%2Fparse%2Fexperimental%2Ftemplate%29"><span class="RktSym">syntax/parse/experimental/template</span></a> library just exports the new
+standard forms under the old names (that is, it exports <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stx-patterns.html#%28form._%28%28lib._racket%2Fprivate%2Fstxcase-scheme..rkt%29._syntax%29%29">syntax</a></span> under
+the name <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Experimental.html#%28form._%28%28lib._syntax%2Fparse%2Fexperimental%2Ftemplate..rkt%29._template%29%29">template</a></span>, and so on).</p>
+  <footer><a href='/blog/2018/11/new-syntax-template-features'>&hellip; more &hellip;</a></footer>
+</article>
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2011/09/syntax-parse-and-literals'>syntax-parse and literals</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2011-09-09">2011-09-09</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/macros.html">macros</a></span>
+    </div>
+  </header>
+  <p>In <a href="/blog/2011/09/macros-and-literals">my
+last post</a>, I talked about macros and referential auxiliary
+identifiers&#8212;<wbr></wbr>what we usually call a macro&rsquo;s &ldquo;literals.&rdquo; Scheme
+macro systems only get it half right, though, because while they
+compare identifiers using referential equality (i.e., using the
+<span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxcmp.html#%28def._%28%28quote._~23~25kernel%29._free-identifier~3d~3f%29%29">free-identifier=?</a></span> predicate), they allow literals to refer to
+nonexistent bindings. While the comparison is well-defined via the
+definition of <span class="RktSym"><a class="RktValLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/stxcmp.html#%28def._%28%28quote._~23~25kernel%29._free-identifier~3d~3f%29%29">free-identifier=?</a></span>, at a higher level the idea
+is nonsensical.</p>
+<p>In contrast, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/syntax/Parsing_Syntax.html#%28form._%28%28lib._syntax%2Fparse..rkt%29._syntax-parse%29%29">syntax-parse</a></span> requires that every literal
+refer to some binding. (I&rsquo;ll sometimes refer to this requirement as
+the <span style="font-style: italic">is-bound</span> property for short.) This requirement is
+problematic in a different way. Specifically, this property cannot be
+checked statically (that is, when the syntax-parse expression
+containing the literal is compiled).</p>
+  <footer><a href='/blog/2011/09/syntax-parse-and-literals'>&hellip; more &hellip;</a></footer>
+</article>
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2011/09/macros-and-literals'>macros and literals</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2011-09-07">2011-09-07</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/macros.html">macros</a></span>
+    </div>
+  </header>
+  <p>Macros often have associated auxiliary identifiers (sometimes called
+<span style="font-style: italic">keywords</span> or <span style="font-style: italic">reserved words</span>, although both terms are
+problematic in Racket). For example, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._cond%29%29">cond</a></span> has <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._else%29%29">else</a></span>;
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._class%29%29">class</a></span> has <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._public%29%29">public</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._private%29%29">private</a></span>, etc;
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/creatingunits.html#%28form._%28%28lib._racket%2Funit..rkt%29._unit%29%29">unit</a></span> has <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/creatingunits.html#%28form._%28%28lib._racket%2Funit..rkt%29._import%29%29">import</a></span> and <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/creatingunits.html#%28form._%28%28lib._racket%2Funit..rkt%29._export%29%29">export</a></span>.</p>
+<p>The fundamental question is what constitutes a use of an auxiliary
+identifier, and there are two reasonable answers: <span style="font-style: italic">symbolic
+equality</span> and <span style="font-style: italic">referential equality</span>. By symbolic equality I
+mean, for example, that any identifier written with exactly the
+letters <span class="stt">else</span> is accepted as an <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._else%29%29">else</a></span> auxiliary form. By
+referential equality I mean any identifier that <span style="font-style: italic">refers to</span>
+(using the standard notions of binding, environments, etc) the binding
+identified as the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/if.html#%28form._%28%28lib._racket%2Fprivate%2Fletstx-scheme..rkt%29._else%29%29">else</a></span> binding.</p>
+  <footer><a href='/blog/2011/09/macros-and-literals'>&hellip; more &hellip;</a></footer>
+</article>
+<article class="post">
+  <header class="post-header">
+    <h2 class="post-title"><a href='/blog/2006/04/macros-parameters-binding-and-reference'>macros, parameters; binding, and reference</a></h2>
+    <div class="post-meta">
+
+      <span class="post-date"><time datetime="2006-04-08">2006-04-08</time></span>
+      <span class="post-tags"><a href="/blog/tags/racket.html">racket</a>, <a href="/blog/tags/macros.html">macros</a></span>
+    </div>
+  </header>
+  <p>Danny Yoo had an interesting question on the plt-scheme mailing list
+recently. At first it seemed like your standard non-hygienic, &ldquo;I want
+this to mean something in here&rdquo; macro question. I used to group
+macros into three levels of &ldquo;hygienicness&rdquo;: the hygienic ones, the
+ones that are morally hygienic in that the names they introduce are
+based on their input, and the totally non-hygienic ones that have a
+fixed name that they stick into the program. An example of the middle
+set is <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/define-struct.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._define-struct%29%29">define-struct</a></span>, and an example of the third set is a
+loop construct that binds the name <span class="RktKw">yield</span> in its body.</p>
+<p>The third class used to offend me from a purist&rsquo;s (semi-purist?)
+perspective. But it&rsquo;s a very reasonable thing to want to do. Consider
+the <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._class%29%29">class</a></span> macro and the names it uses to do interesting
+things: <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._super%29%29">super</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._public%29%29">public</a></span>, <span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._field%29%29">field</a></span>,
+<span class="RktSym"><a class="RktStxLink Sq" data-pltdoc="x" href="https://docs.racket-lang.org/reference/createclass.html#%28form._%28%28lib._racket%2Fprivate%2Fclass-internal..rkt%29._init%29%29">init</a></span>, and so on. It depends on those particular names.</p>
+  <footer><a href='/blog/2006/04/macros-parameters-binding-and-reference'>&hellip; more &hellip;</a></footer>
+</article>
+
+          <nav class="index-pagination" aria-label="Index Pagination">
+  <div class="pure-menu pure-menu-horizontal">
+    <ul class="pure-menu-list">
+      <li class="pure-menu-item pure-menu-disabled">
+        <a class="pure-menu-link pure-menu-disabled" href="#">&larr;</a>
+      </li>
+      <li class='pure-menu-item pure-menu-selected'>
+        <a class="pure-menu-link" href="/blog/tags/macros.html">1</a>
+      </li>
+      <li class="pure-menu-item pure-menu-disabled">
+        <a class="pure-menu-link pure-menu-disabled" href="#">&rarr;</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+        </div>
+        <div class="page-copyright">
+          <div class="page-copyright-icon">
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+              <img alt="Creative Commons License" style="border-width:0"
+                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+          </div>
+          <div class="page-copyright-text">
+            Copyright 2006&ndash;2020 Ryan Culpepper.
+            This work is licensed under a
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
