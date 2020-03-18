@@ -36,17 +36,16 @@
                    [max-year (argmax string->number (cons now-year post-years))]
                    [min-year (argmin string->number (cons now-year post-years))])
               (if (equal? min-year max-year) min-year (format "~a&ndash;~a" min-year max-year)))))
-      @list{<hr />
-            <div>
-            <div style="padding: 0.5em; float: left">
-            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
-              <img alt="Creative Commons License" style="border-width:0"
-                   src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
-            </div>
-            <div>
-            Copyright @|copyright-year| Ryan Culpepper.
-            This work is licensed under a
-            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
-            Creative Commons Attribution-ShareAlike 4.0 International License</a>.
-            </div>
-            }])))
+      @list{<div class="page-copyright">
+              <div class="page-copyright-icon">
+                <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                  <img alt="Creative Commons License" style="border-width:0"
+                       src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+              </div>
+              <div class="page-copyright-text">
+                Copyright @|copyright-year| Ryan Culpepper.
+                This work is licensed under a
+                <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+                Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+              </div>
+            </div>}])))
