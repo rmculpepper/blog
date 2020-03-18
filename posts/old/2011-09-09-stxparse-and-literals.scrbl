@@ -14,7 +14,7 @@
   (define-syntax ==>
     (make-element-id-transformer (lambda _ #'(elem "⇒")))))
 
-In @me-link["/2011/09/macros-and-literals.html"]{my
+In @me-link["/2011/09/macros-and-literals"]{my
 last post}, I talked about macros and referential auxiliary
 identifiers---what we usually call a macro's ``literals.'' Scheme
 macro systems only get it half right, though, because while they

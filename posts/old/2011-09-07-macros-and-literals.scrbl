@@ -70,7 +70,7 @@ unshadowable, though; I think it would be a net win for usability.
 (Note that all of these arguments in favor of referential auxiliary
 identifiers also apply to syntax-parameters as a superior alternative
 to unhygienic binding. See
-@me-link["/2006/04/macros-parameters-binding-and.html"]{my old blog
+@me-link["/2006/04/macros-parameters-binding-and-reference"]{my old blog
 post on the subject}.)
 
 Scheme uses referential equality for macro ``literals lists'' (used to

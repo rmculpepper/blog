@@ -1,7 +1,7 @@
 ;; Date: 2018-12-02T00:21:43
 ;; Display: draft
 #lang scribble/manual
-@(require "util.rkt"
+@(require "old/util.rkt"
           (for-label racket/base))
 
 @title{normalization by evaluation}

@@ -15,7 +15,7 @@
 ;; Intra-blog links
 
 (define (me-link url . pre-flow)
-  (apply hyperlink (string-append "https://rmculpepper.github.io" url) pre-flow))
+  (apply hyperlink (string-append "/blog" url) pre-flow))
 
 ;; Reference and Guide links
 

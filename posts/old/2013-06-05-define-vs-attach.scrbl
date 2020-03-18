@@ -141,7 +141,7 @@ If the set of names to give new meaning to is small, fixed, and known
 when the client macro is defined---like in the case of
 @racket[match]---then it can be done by simple hard-coded identifier
 comparisons in the
-@me-link["/2011/09/macros-and-literals.html"]{literals list} of a
+@me-link["/2011/09/macros-and-literals"]{literals list} of a
 macro. Otherwise, the new sense of meaning can be represented by an
 @emph{identifier-keyed dictionary}. (Like macro literals, identifier
 dictionaries should use @racket[free-identifier=?] for key
