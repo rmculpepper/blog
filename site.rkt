@@ -40,7 +40,7 @@
               <div class="page-copyright-icon">
                 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
                   <img alt="Creative Commons License" style="border-width:0"
-                       src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a>
+                       src="@(send (the-site) link)/img/cc4-by-sa-88x31.png" /></a>
               </div>
               <div class="page-copyright-text">
                 Copyright @|copyright-year| Ryan Culpepper.
