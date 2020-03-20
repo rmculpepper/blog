@@ -18,7 +18,8 @@
   (apply hyperlink (string-append "/blog" url) pre-flow))
 
 (define ex-link-base
-  "https://raw.githubusercontent.com/rmculpepper/blog/master/examples")
+  #;"https://raw.githubusercontent.com/rmculpepper/blog/master/examples"
+  "https://github.com/rmculpepper/blog/blob/master/examples")
 
 (define (ex-link suffix . pre-flow)
   (apply hyperlink (format "~a/~a" ex-link-base suffix) pre-flow))
