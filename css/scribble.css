@@ -35,6 +35,11 @@ p, .SIntrapara {
   margin: 1em 0;
 }
 
+/* A racketblock (etc?) containing a single line has an embedded p element */
+.SCodeFlow p {
+  margin: 0
+}
+
 h2 { /* per-page main title */
   margin-top: 0;
 }
