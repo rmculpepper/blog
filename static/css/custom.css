@@ -65,11 +65,3 @@ article img {
 }
 .page-copyright-text {
 }
-
-/* Disqus */
-.disqus-container {
-    margin-top: 1em;
-}
-#load-disqus-button {
-    width: 100%;
-}
