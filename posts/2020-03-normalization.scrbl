@@ -1,5 +1,4 @@
 ;; Date: 2020-03-20
-;; Display: draft
 #lang scribble/manual
 @(require scribble/example
           (for-syntax racket/base)
