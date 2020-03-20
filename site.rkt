@@ -22,7 +22,10 @@
 
 (extra-html
  (lambda (location page)
+   (define site (the-site))
    (case location
+     [(end-body)
+      @list{<script type="text/javascript" async src="@(send site link)/js/custom.js"></script>}]
      [(after-tagline)
       @list{<h2 class="site-alt-tagline">
               (blog-of ryanc@"@"racket-lang.org)
@@ -30,7 +33,7 @@
      [(end-content)
       (define copyright-year
         (or (and (send page is-page-type? 'post) (send page get-year))
-            (let* ([posts (send (the-site) get-posts)]
+            (let* ([posts (send site get-posts)]
                    [post-years (filter string? (map (lambda (p) (send p get-year)) posts))]
                    [now-year (number->string (date-year (current-date)))]
                    [max-year (argmax string->number (cons now-year post-years))]
@@ -40,7 +43,7 @@
               <div class="page-copyright-icon">
                 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
                   <img alt="Creative Commons License" style="border-width:0"
-                       src="@(send (the-site) link)/img/cc4-by-sa-88x31.png" /></a>
+                       src="@(send site link)/img/cc4-by-sa-88x31.png" /></a>
               </div>
               <div class="page-copyright-text">
                 Copyright @|copyright-year| Ryan Culpepper.
@@ -48,4 +51,13 @@
                 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
                 Creative Commons Attribution-ShareAlike 4.0 International License</a>.
               </div>
-            </div>}])))
+            </div>}]
+     [(end-post-footer)
+      @list{<div class="disqus-container">
+              <a href="#" id="load-disqus-button" class="pure-button"
+                 onclick="load_disqus('@(send page get-full-link)');return false;">
+                Show/Post Comments
+              </a>
+              <div id="disqus_thread"></div>
+            </div>}]
+     )))
