@@ -14,15 +14,16 @@
 
 ;; Intra-blog links
 
-(define (me-link url . pre-flow)
-  (apply hyperlink (string-append "/blog" url) pre-flow))
+(define ((make-hyperlinker prefix) suffix . pre-flow)
+  (apply hyperlink (string-append prefix suffix) pre-flow))
+
+(define me-link (make-hyperlinker "/blog"))
 
 (define ex-link-base
   #;"https://raw.githubusercontent.com/rmculpepper/blog/master/examples"
   "https://github.com/rmculpepper/blog/blob/master/examples")
 
-(define (ex-link suffix . pre-flow)
-  (apply hyperlink (format "~a/~a" ex-link-base suffix) pre-flow))
+(define ex-link (make-hyperlinker ex-link-base))
 
 ;; Reference and Guide links
 
