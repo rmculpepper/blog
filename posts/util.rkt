@@ -42,3 +42,15 @@
 
 (define-syntax ==>
   (make-element-id-transformer (lambda _ #'(elem "⇒"))))
+
+;; ============================================================
+;; HTML
+
+(define (html:blockquote #:cite [cite-href #f] . pre-flow)
+  (define s (style #f (list (alt-tag "blockquote")
+                            (attributes (if cite-href `((cite . ,cite-href)) '())))))
+  (apply para #:style s pre-flow))
+
+(define (html:footer . pre-flow)
+  (define s (style #f (list (alt-tag "footer"))))
+  (apply para #:style s pre-flow))
