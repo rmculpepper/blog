@@ -8,3 +8,5 @@
 - syntax-parse interpreter data
 
 - macro profiler
+
+- the semantics of certificates (and other crypto things)
