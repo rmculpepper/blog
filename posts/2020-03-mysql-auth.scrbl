@@ -83,6 +83,9 @@ Bad outcomes:
 - attacker discovers a password-equivalent
 }
 
+I'll use Brutus and Tabula to illustrate attacks against the
+authentication protocols.
+
 
 @;============================================================
 @blogsection{MySQL: @tt{caching_sha2_password} Authentication}
@@ -176,10 +179,10 @@ because of the nonce.)
 @(define speed:sha256-52/sec 4.5e6)
 
 For comparison, @exec{openssl speed -evp sha256 -seconds 1} tells me
-that on my desktop OpenSSL can do about 4.5 million @tt{sha256}
-operations on 52-byte inputs (the longest input consists of 32 bytes
-of @tt{sha256} output plus 20 bytes for the nonce, assuming no
-unusually long passwords). And that's on a single core.
+that on my desktop, on a single core, OpenSSL can do about 4.5 million
+@tt{sha256} operations on 52-byte inputs (the longest input consists
+of 32 bytes of @tt{sha256} output plus 20 bytes for the nonce,
+assuming no unusually long passwords).
 
 @bold{Attack: Eavesdrop on a slow-path authentication.} If the client
 is using TLS and using it correctly (including verifying the server's
@@ -411,6 +414,16 @@ Password lists:
 
 https://en.wikipedia.org/wiki/Alice_and_Bob
 https://research.checkpoint.com/2019/cryptographic-attacks-a-guide-for-the-perplexed/
+
+https://stackoverflow.com/questions/11298184/about-how-fast-can-you-brute-force-pbkdf2
+https://www.usenix.org/system/files/conference/woot16/woot16-paper-ruddick.pdf - an attack on PBKDF2
+https://eprint.iacr.org/2016/273.pdf - On the Weaknesses of PBKDF2
+https://crypto.stackexchange.com/questions/18173/how-long-does-it-take-to-crack-pbkdf2
+
+http://databaseblog.myname.nl/2018/02/how-cachingsha2password-leaks-passwords.html
+
+https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2007/july/enough-with-the-rainbow-tables-what-you-need-to-know-about-secure-password-schemes/ -- republished from elsewhere???
+https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2015/march/enough-with-the-salts-updates-on-secure-password-schemes/
 }
 
 Comment: timings from my desktop don't necessarily reflect GPU times,
