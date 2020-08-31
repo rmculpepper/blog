@@ -46,7 +46,7 @@ relatively low entropy of human-generated passwords. A uniform
 distribution of passwords of length 8 from the 95 printable ASCII
 characters has an entropy of 8 × log@subscript{2}(95) = @(~r
 #:precision 2 (* 8 (/ (log 95) (log 2)))) --- but humans do not choose
-passwords from uniform distributions! Even if they did, that number is
+passwords from uniform distributions. Even if they did, that number is
 miniscule compared to a typical security level target of 128 bits.
 
 A cryptographic system has ``@italic{N} bits of security'' ---
@@ -424,11 +424,10 @@ http://databaseblog.myname.nl/2018/02/how-cachingsha2password-leaks-passwords.ht
 
 https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2007/july/enough-with-the-rainbow-tables-what-you-need-to-know-about-secure-password-schemes/ -- republished from elsewhere???
 https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2015/march/enough-with-the-salts-updates-on-secure-password-schemes/
-}
 
 Comment: timings from my desktop don't necessarily reflect GPU times,
 etc. Also, trivially parallelizable.
 
-
 TODO: taking PBKDF2 spec as baseline, calculate year for which each
 auth mechanism is "adequate"
+}
