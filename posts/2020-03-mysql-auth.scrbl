@@ -86,6 +86,40 @@ Bad outcomes:
 I'll use Brutus and Tabula to illustrate attacks against the
 authentication protocols.
 
+@; ============================================================
+@blogsection{Authentication in MySQL 4.1 to 5.7}
+
+From MySQL 4.1 to 5.7, the standard authentication mechanism was
+@tt{mysql_native_password}. The protocol looks like this:
+
+@nested[#:style 'code-inset
+@verbatim{
+  Server → Client: nonce (20 bytes)
+  Client → Server: sha1(passwd) XOR sha1(nonce || sha1(sha1(passwd)))
+}]
+
+(Above, ⊕ means XOR, || means concatenation.)
+
+The server stores @tt{sha1(sha1(passwd))}, and it generates a fresh nonce
+for each authentication attempt. Verification works as follows:
+@itemlist[
+
+@item{The server knows @tt{sha1(sha1(passwd))} and @tt{nonce}, but it
+does not know @tt{passwd} or @tt{sha1(passwd)}.}
+
+@item{The server computes @tt{rhs = sha1(nonce || sha1(sha1(passwd)))}.
+It can do that, because it has both components.}
+
+@item{When the server receives a response from the client, it computes
+@tt{lhs = response ⊕ rhs}. If the client sent a correct response, then
+@tt{lhs} should be @tt{sha1(passwd)}. The server does not know
+@tt{sha1(passwd)}, but it can compute @tt{sha1(lhs)} and check whether
+that matches @tt{sha1(sha1(passwd))}, which it does know.}
+
+]
+
+... The server does not directly store data that would let it authenticate as a client....
+
 
 @;============================================================
 @blogsection{MySQL: @tt{caching_sha2_password} Authentication}
@@ -396,8 +430,9 @@ TLS and use it correctly, including verifying the server
 certificate. That will protect against eavesdropping as well as other
 attacks I haven't discussed in detail, like MITM.
 
-On the other hand, TLS won't protect against 
-
+On the other hand, TLS won't protect against attackers that steal the
+password file itself. And ``secure password storage'' is concerned
+exactly with that kind of attack.
 
 
 @blogsection{Other Comments}
